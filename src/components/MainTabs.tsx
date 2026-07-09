@@ -1,7 +1,7 @@
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { clearAuthToken } from "../services";
-import { useRouter } from "expo-router";
 
 export default function MainTabs() {
   const router = useRouter();
@@ -48,12 +48,15 @@ export default function MainTabs() {
 
       <View style={styles.bottomNav}>
         <Pressable style={styles.navItem} onPress={() => setActiveTab("home")}>
+          <Text style={styles.navIcon}>⌂</Text>
           <Text style={activeTab === "home" ? styles.navTextActive : styles.navText}>Home</Text>
         </Pressable>
         <Pressable style={styles.navItem} onPress={() => setActiveTab("laporan")}>
+          <Text style={styles.navIcon}>▤</Text>
           <Text style={activeTab === "laporan" ? styles.navTextActive : styles.navText}>Laporan</Text>
         </Pressable>
         <Pressable style={styles.navItem} onPress={() => setActiveTab("setting")}>
+          <Text style={styles.navIcon}>⚙</Text>
           <Text style={activeTab === "setting" ? styles.navTextActive : styles.navText}>Setting</Text>
         </Pressable>
       </View>
@@ -127,6 +130,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     paddingVertical: 8,
+  },
+  navIcon: {
+    fontSize: 18,
+    marginBottom: 2,
   },
   navText: {
     fontSize: 14,
