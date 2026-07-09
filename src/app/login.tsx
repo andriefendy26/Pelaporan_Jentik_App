@@ -1,10 +1,12 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { authService, setAuthToken } from "../services";
+import { AuthContext } from "../services/Context/AuthContext";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { login } = useContext(AuthContext);
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("admin");
   const [loading, setLoading] = useState(false);
@@ -19,16 +21,23 @@ export default function LoginScreen() {
 
     try {
       const response = await authService.login({ username, password });
-      const token = response.data?.token;
+      const payload = response?.data;
+      const token = payload?.token || payload?.data?.token;
+      const userInfo = payload?.user || payload?.data?.user || { username };
 
       if (token) {
-        setAuthToken(token);
+        await login(token, userInfo);
         router.replace("/");
       } else {
-        Alert.alert("Login gagal", "Token tidak diterima dari server.");
+        const message = payload?.message || payload?.data?.message || "Token tidak diterima dari server.";
+        Alert.alert("Login gagal", message);
       }
     } catch (error: any) {
-      const message = error?.response?.data?.message || "Login gagal. Periksa koneksi atau kredensial Anda.";
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Login gagal. Periksa koneksi atau kredensial Anda.";
       Alert.alert("Login gagal", message);
     } finally {
       setLoading(false);

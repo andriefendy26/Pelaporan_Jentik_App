@@ -1,11 +1,12 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
 
-const API_URL = (Constants.expoConfig?.extra?.apiUrl || 'https://<domain-anda>/api').replace(/\/+$/, '');
+const rawApiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://10.0.2.2:8000/api';
+const API_URL = (rawApiUrl || 'http://10.0.2.2:8000/api').replace(/\/+$/, '');
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  timeout: 20000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',

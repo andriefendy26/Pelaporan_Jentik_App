@@ -22,8 +22,19 @@ export interface AbjPayload {
 }
 
 export const authService = {
-  login: (payload: LoginPayload) => api.post('/login', payload),
-  logout: () => api.get('/logout'),
+  login: (payload: LoginPayload) => {
+    const params = new URLSearchParams();
+    params.append('username', payload.username);
+    params.append('password', payload.password);
+
+    return api.post('http://10.0.2.2:8000/api/login', params, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      },
+      transformRequest: [(data) => data],
+    });
+  },
+  logout: () => api.post('/logout'),
 };
 
 export const abjService = {
