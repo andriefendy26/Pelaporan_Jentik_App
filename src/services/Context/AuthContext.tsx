@@ -1,129 +1,102 @@
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, useEffect, useState } from 'react';
-import { setAuthToken, clearAuthToken } from '../api';
-import { authService } from '../jentikService';
+import { apiClient } from '../../api/client';
+import { User, LoginResponse, ApiMessageResponse } from '../../types/auth';
 
-const STORAGE_KEYS = {
-  token: 'token',
-  userInfo: 'userInfo',
-};
-
-const memoryStorage = new Map<string, string>();
-
-const safeStorage = {
-  async getItem(key: string) {
-    try {
-      const value = await AsyncStorage.getItem(key);
-      if (value !== null) {
-        memoryStorage.set(key, value);
-        return value;
-      }
-
-      return memoryStorage.get(key) ?? null;
-    } catch (error) {
-      console.log('Storage unavailable, using memory fallback', error);
-      return memoryStorage.get(key) ?? null;
-    }
-  },
-  async setItem(key: string, value: string) {
-    try {
-      await AsyncStorage.setItem(key, value);
-      memoryStorage.set(key, value);
-    } catch (error) {
-      console.log('Storage unavailable, using memory fallback', error);
-      memoryStorage.set(key, value);
-    }
-  },
-  async removeItem(key: string) {
-    try {
-      await AsyncStorage.removeItem(key);
-      memoryStorage.delete(key);
-    } catch (error) {
-      console.log('Storage unavailable, using memory fallback', error);
-      memoryStorage.delete(key);
-    }
-  },
-};
-
-type AuthContextType = {
+interface AuthContextData {
+  user: User | null;
   token: string | null;
-  userInfo: any | null;
-  loading: boolean;
-  login: (token: string, userInfo: any) => Promise<void>;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  login: (username: string, password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
-};
+}
 
-export const AuthContext = createContext<AuthContextType>({
-  token: null,
-  userInfo: null,
-  loading: true,
-  login: async () => {},
-  logout: async () => {},
-});
+const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
- const [token, setToken] = useState<string | null>(null);
-  const [userInfo, setUserInfo] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadToken = async () => {
-      try {
-        const storedToken = await safeStorage.getItem(STORAGE_KEYS.token);
-        const storedUserInfo = await safeStorage.getItem(STORAGE_KEYS.userInfo);
-
-        if (storedToken) {
-          setAuthToken(storedToken); // <-- tambahan penting
-          setToken(storedToken);
-        }
-
-        if (storedUserInfo) {
-          setUserInfo(JSON.parse(storedUserInfo));
-        }
-      } catch (error) {
-        console.log('Failed to load auth state', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadToken();
+    loadStoredSession();
   }, []);
 
-  const login = async (newToken: string, userInfoData: any) => {
+  async function loadStoredSession() {
     try {
-      setAuthToken(newToken); // <-- pindah ke sini, jadi terpusat
-      await safeStorage.setItem(STORAGE_KEYS.token, newToken);
-      await safeStorage.setItem(STORAGE_KEYS.userInfo, JSON.stringify(userInfoData));
-      setToken(newToken);
-      setUserInfo(userInfoData);
-    } catch (error) {
-      console.log('Failed to save auth state', error);
-    }
-  };
+      const [storedToken, storedUser] = await Promise.all([
+        AsyncStorage.getItem('auth_token'),
+        AsyncStorage.getItem('auth_user'),
+      ]);
 
-  const logout = async () => {
+      if (storedToken && storedUser) {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error('Gagal memuat sesi tersimpan:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function login(username: string, password: string) {
     try {
-      await authService.logout();
-    } catch (error) {
-      console.log('Logout request failed', error);
-    }
+      const response = await apiClient.post<LoginResponse>('/login', {
+        username,
+        password,
+      });
 
+      const { token: authToken, user: authUser } = response.data;
+
+      await AsyncStorage.setItem('auth_token', authToken);
+      await AsyncStorage.setItem('auth_user', JSON.stringify(authUser));
+
+      setToken(authToken);
+      setUser(authUser);
+
+      return { success: true, message: response.data.message };
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message ?? 'Tidak dapat terhubung ke server, coba lagi nanti';
+      return { success: false, message };
+    }
+  }
+
+  async function logout() {
     try {
-      await safeStorage.removeItem(STORAGE_KEYS.token);
-      await safeStorage.removeItem(STORAGE_KEYS.userInfo);
+      await apiClient.post<ApiMessageResponse>('/logout');
     } catch (error) {
-      console.log('Failed to clear auth storage', error);
+      // Tetap lanjut hapus sesi lokal walau request logout ke server gagal
+      console.error('Gagal logout di server:', error);
+    } finally {
+      await AsyncStorage.multiRemove(['auth_token', 'auth_user']);
+      setToken(null);
+      setUser(null);
     }
-
-    clearAuthToken(); // <-- tambahan
-    setToken(null);
-    setUserInfo(null);
-  };
+  }
 
   return (
-    <AuthContext.Provider value={{ token, userInfo, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        isLoading,
+        isAuthenticated: !!token,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
-};
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth harus dipakai di dalam <AuthProvider>');
+  }
+  return context;
+}

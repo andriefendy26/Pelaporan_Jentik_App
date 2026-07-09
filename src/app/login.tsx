@@ -1,126 +1,119 @@
-import { useRouter } from "expo-router";
-import { useContext, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { authService, setAuthToken } from "../services";
-import { AuthContext } from "../services/Context/AuthContext";
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { useAuth } from '../services/Context/AuthContext';
 
 export default function LoginScreen() {
-  const router = useRouter();
-  const { login } = useContext(AuthContext);
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("admin");
-  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = async () => {
+  async function handleLogin() {
     if (!username || !password) {
-      Alert.alert("Validasi", "Username dan password wajib diisi.");
+      setErrorMsg('Username dan password wajib diisi');
       return;
     }
 
-    setLoading(true);
+    setErrorMsg('');
+    setIsSubmitting(true);
 
-    try {
-      const response = await authService.login({ username, password });
-      const payload = response?.data;
-      const token = payload?.token || payload?.data?.token;
-      const userInfo = payload?.user || payload?.data?.user || { username };
+    const result = await login(username, password);
 
-      if (token) {
-        await login(token, userInfo);
-        router.replace("/");
-      } else {
-        const message = payload?.message || payload?.data?.message || "Token tidak diterima dari server.";
-        Alert.alert("Login gagal", message);
-      }
-    } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        "Login gagal. Periksa koneksi atau kredensial Anda.";
-      Alert.alert("Login gagal", message);
-    } finally {
-      setLoading(false);
+    setIsSubmitting(false);
+
+    if (!result.success) {
+      setErrorMsg(result.message);
     }
-  };
+    // Jika sukses, redirect otomatis ditangani oleh app/_layout.tsx
+  }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Masuk</Text>
-        <Text style={styles.subtitle}>Silakan login untuk melanjutkan</Text>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <Text style={styles.title}>Masuk</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Username"
-          value={username}
-          onChangeText={setUsername}
-          autoCapitalize="none"
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Username"
+        autoCapitalize="none"
+        autoCorrect={false}
+        value={username}
+        onChangeText={setUsername}
+      />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
 
-        <Pressable style={styles.button} onPress={handleLogin} disabled={loading}>
-          <Text style={styles.buttonText}>{loading ? "Memproses..." : "Login"}</Text>
-        </Pressable>
-      </View>
-    </View>
+      {errorMsg ? <Text style={styles.error}>{errorMsg}</Text> : null}
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleLogin}
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Masuk</Text>
+        )}
+      </TouchableOpacity>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
     padding: 24,
-    backgroundColor: "#f5f7fb",
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    backgroundColor: '#fff',
   },
   title: {
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 8,
-    color: "#0f172a",
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#64748b",
-    marginBottom: 20,
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 32,
+    textAlign: 'center',
+    color: '#111827',
   },
   input: {
     borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
-    color: "#0f172a",
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 16,
+    fontSize: 16,
+  },
+  error: {
+    color: '#dc2626',
+    marginBottom: 16,
+    textAlign: 'center',
   },
   button: {
-    marginTop: 8,
-    backgroundColor: "#2563eb",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
+    backgroundColor: '#2563eb',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
   },
   buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 15,
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

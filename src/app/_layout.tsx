@@ -1,31 +1,34 @@
-import { Stack, useRouter, useSegments } from "expo-router";
-import { useContext, useEffect } from "react";
-import { AuthContext, AuthProvider } from "../services/Context/AuthContext";
-
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { useEffect } from 'react';
+import { AuthProvider, useAuth } from '../services/Context/AuthContext';
+ 
 function RootNavigation() {
-  const { token, loading } = useContext(AuthContext);
+  const { isAuthenticated, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-
+ 
   useEffect(() => {
-    if (loading) return;
+    if (isLoading) return;
 
     const inLoginPage = segments[0] === "login";
 
-    if (!token && !inLoginPage) {
-      router.replace("/login");
-    } else if (token && inLoginPage) {
-      router.replace("/");
-    }
-  }, [token, loading, segments]);
-
-  if (loading) {
-    return null; // bisa diganti splash screen
+  if (!isAuthenticated && !inLoginPage) {
+        // Belum login -> arahkan ke halaman login
+        router.replace('/login');
+      } else if (isAuthenticated && inLoginPage) {
+        // Sudah login tapi masih di halaman auth -> arahkan ke halaman utama
+        router.replace('/');
+      }
+  }, [isAuthenticated, isLoading, segments]);
+ 
+  if (isLoading) {
+    // Bisa diganti dengan splash screen / spinner
+    return null;
   }
-
+ 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
-
+ 
 export default function RootLayout() {
   return (
     <AuthProvider>

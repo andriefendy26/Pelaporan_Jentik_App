@@ -1,15 +1,15 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { clearAuthToken } from "../services";
+import { useAuth } from '../services/Context/AuthContext';
 
 export default function MainTabs() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"home" | "laporan" | "setting">("home");
+  const { user, logout } = useAuth();
 
   const handleLogout = () => {
-    clearAuthToken();
-    router.replace("/login");
+    logout()
   };
 
   return (
@@ -20,7 +20,7 @@ export default function MainTabs() {
             <Text style={styles.title}>Pelaporan Jentik</Text>
             <Text style={styles.subtitle}>Dashboard utama aplikasi</Text>
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Selamat datang</Text>
+              <Text style={styles.cardTitle}>Selamat datang {user?.name ?? user?.username}!</Text>
               <Text style={styles.cardText}>
                 Anda dapat melihat data laporan, dashboard, dan analisa dari sini.
               </Text>
