@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,6 +14,21 @@ import BottomNav from '../components/BottomNav';
 import { useAuth } from '../services/Context/AuthContext';
 import { profileService } from '../services/Profileservice';
 
+const COLORS = {
+  bg: '#EEEEEE',
+  cardBg: '#FFFFFF',
+  textDark: '#222831',
+  textSecondary: '#393E46',
+  accent: '#00ADB5',
+  danger: '#dc2626',
+  dangerBg: '#fdecea',
+};
+
+function getInitial(name?: string, username?: string) {
+  const source = name || username || '?';
+  return source.trim().charAt(0).toUpperCase();
+}
+
 export default function SettingScreen() {
   const { user, logout } = useAuth();
 
@@ -25,6 +41,11 @@ export default function SettingScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
+
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   useEffect(() => {
     loadProfile();
@@ -98,6 +119,13 @@ export default function SettingScreen() {
     }
   };
 
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Yakin ingin keluar dari akun?', [
+      { text: 'Batal', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: logout },
+    ]);
+  };
+
   const handleDeleteAccount = () => {
     Alert.alert(
       'Hapus Akun',
@@ -123,92 +151,208 @@ export default function SettingScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Setting</Text>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Text style={styles.title}>Pengaturan</Text>
 
-        <View style={styles.infoBox}>
-          <Text style={styles.infoLabel}>Kelurahan</Text>
-          <Text style={styles.infoValue}>{user?.kelurahan?.name ?? '-'}</Text>
-          <Text style={styles.infoLabel}>RT</Text>
-          <Text style={styles.infoValue}>{user?.r_t?.name ?? '-'}</Text>
+        {/* Profile header */}
+        <View style={styles.profileHeader}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{getInitial(name, username)}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.profileName}>{name || username || 'Pengguna'}</Text>
+            <Text style={styles.profileSub}>{email || 'Belum ada email'}</Text>
+          </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Profil</Text>
+        {/* Wilayah info */}
+        <View style={styles.infoBox}>
+          <View style={styles.infoRow}>
+            <View style={styles.infoIconWrapper}>
+              <Ionicons name="location-outline" size={16} color={COLORS.accent} />
+            </View>
+            <View>
+              <Text style={styles.infoLabel}>Kelurahan</Text>
+              <Text style={styles.infoValue}>{user?.kelurahan?.name ?? '-'}</Text>
+            </View>
+          </View>
+          <View style={styles.infoDivider} />
+          <View style={styles.infoRow}>
+            <View style={styles.infoIconWrapper}>
+              <Ionicons name="home-outline" size={16} color={COLORS.accent} />
+            </View>
+            <View>
+              <Text style={styles.infoLabel}>RT</Text>
+              <Text style={styles.infoValue}>{user?.r_t?.name ?? '-'}</Text>
+            </View>
+          </View>
+        </View>
 
-        <Text style={styles.label}>Nama</Text>
-        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Nama lengkap" />
+        {/* Profil section */}
+        <View style={styles.sectionHeaderRow}>
+          <Ionicons name="person-outline" size={17} color={COLORS.textDark} />
+          <Text style={styles.sectionTitle}>Profil</Text>
+        </View>
 
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-          placeholder="Email"
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
+        <View style={styles.card}>
+          <Text style={styles.label}>Nama</Text>
+          <View style={[styles.inputWrapper, focusedField === 'name' && styles.inputWrapperFocused]}>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Nama lengkap"
+              placeholderTextColor="#9aa0a6"
+              onFocus={() => setFocusedField('name')}
+              onBlur={() => setFocusedField(null)}
+            />
+          </View>
 
-        <Text style={styles.label}>Username</Text>
-        <TextInput
-          style={styles.input}
-          value={username}
-          onChangeText={setUsername}
-          placeholder="Username"
-          autoCapitalize="none"
-        />
+          <Text style={styles.label}>Email</Text>
+          <View style={[styles.inputWrapper, focusedField === 'email' && styles.inputWrapperFocused]}>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Email"
+              placeholderTextColor="#9aa0a6"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              onFocus={() => setFocusedField('email')}
+              onBlur={() => setFocusedField(null)}
+            />
+          </View>
 
-        <TouchableOpacity style={styles.button} onPress={handleSaveProfile} disabled={savingProfile}>
-          {savingProfile ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Simpan Profil</Text>
-          )}
-        </TouchableOpacity>
+          <Text style={styles.label}>Username</Text>
+          <View style={[styles.inputWrapper, focusedField === 'username' && styles.inputWrapperFocused]}>
+            <TextInput
+              style={styles.input}
+              value={username}
+              onChangeText={setUsername}
+              placeholder="Username"
+              placeholderTextColor="#9aa0a6"
+              autoCapitalize="none"
+              onFocus={() => setFocusedField('username')}
+              onBlur={() => setFocusedField(null)}
+            />
+          </View>
 
-        <Text style={styles.sectionTitle}>Ubah Password</Text>
+          <TouchableOpacity
+            style={[styles.button, savingProfile && styles.buttonDisabled]}
+            onPress={handleSaveProfile}
+            disabled={savingProfile}
+            activeOpacity={0.85}
+          >
+            {savingProfile ? (
+              <ActivityIndicator color={COLORS.cardBg} />
+            ) : (
+              <Text style={styles.buttonText}>Simpan Profil</Text>
+            )}
+          </TouchableOpacity>
+        </View>
 
-        <Text style={styles.label}>Password Saat Ini</Text>
-        <TextInput
-          style={styles.input}
-          value={currentPassword}
-          onChangeText={setCurrentPassword}
-          placeholder="Password saat ini"
-          secureTextEntry
-        />
+        {/* Password section */}
+        <View style={styles.sectionHeaderRow}>
+          <Ionicons name="lock-closed-outline" size={17} color={COLORS.textDark} />
+          <Text style={styles.sectionTitle}>Ubah Password</Text>
+        </View>
 
-        <Text style={styles.label}>Password Baru</Text>
-        <TextInput
-          style={styles.input}
-          value={newPassword}
-          onChangeText={setNewPassword}
-          placeholder="Minimal 8 karakter"
-          secureTextEntry
-        />
+        <View style={styles.card}>
+          <Text style={styles.label}>Password Saat Ini</Text>
+          <View style={[styles.inputWrapper, focusedField === 'current' && styles.inputWrapperFocused]}>
+            <TextInput
+              style={styles.input}
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              placeholder="Password saat ini"
+              placeholderTextColor="#9aa0a6"
+              secureTextEntry={!showCurrent}
+              onFocus={() => setFocusedField('current')}
+              onBlur={() => setFocusedField(null)}
+            />
+            <TouchableOpacity onPress={() => setShowCurrent(!showCurrent)} hitSlop={8}>
+              <Ionicons
+                name={showCurrent ? 'eye-off-outline' : 'eye-outline'}
+                size={18}
+                color={COLORS.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
 
-        <Text style={styles.label}>Konfirmasi Password Baru</Text>
-        <TextInput
-          style={styles.input}
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          placeholder="Ulangi password baru"
-          secureTextEntry
-        />
+          <Text style={styles.label}>Password Baru</Text>
+          <View style={[styles.inputWrapper, focusedField === 'new' && styles.inputWrapperFocused]}>
+            <TextInput
+              style={styles.input}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder="Minimal 8 karakter"
+              placeholderTextColor="#9aa0a6"
+              secureTextEntry={!showNew}
+              onFocus={() => setFocusedField('new')}
+              onBlur={() => setFocusedField(null)}
+            />
+            <TouchableOpacity onPress={() => setShowNew(!showNew)} hitSlop={8}>
+              <Ionicons
+                name={showNew ? 'eye-off-outline' : 'eye-outline'}
+                size={18}
+                color={COLORS.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
 
-        <TouchableOpacity style={styles.button} onPress={handleChangePassword} disabled={savingPassword}>
-          {savingPassword ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Ubah Password</Text>
-          )}
-        </TouchableOpacity>
+          <Text style={styles.label}>Konfirmasi Password Baru</Text>
+          <View style={[styles.inputWrapper, focusedField === 'confirm' && styles.inputWrapperFocused]}>
+            <TextInput
+              style={styles.input}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder="Ulangi password baru"
+              placeholderTextColor="#9aa0a6"
+              secureTextEntry={!showConfirm}
+              onFocus={() => setFocusedField('confirm')}
+              onBlur={() => setFocusedField(null)}
+            />
+            <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)} hitSlop={8}>
+              <Ionicons
+                name={showConfirm ? 'eye-off-outline' : 'eye-outline'}
+                size={18}
+                color={COLORS.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-{/* 
-        <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
-          <Text style={styles.deleteText}>Hapus Akun</Text>
-        </TouchableOpacity> */}
+          <TouchableOpacity
+            style={[styles.button, savingPassword && styles.buttonDisabled]}
+            onPress={handleChangePassword}
+            disabled={savingPassword}
+            activeOpacity={0.85}
+          >
+            {savingPassword ? (
+              <ActivityIndicator color={COLORS.cardBg} />
+            ) : (
+              <Text style={styles.buttonText}>Ubah Password</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Zona akun */}
+        <View style={styles.sectionHeaderRow}>
+          <Ionicons name="settings-outline" size={17} color={COLORS.textDark} />
+          <Text style={styles.sectionTitle}>Akun</Text>
+        </View>
+
+        <View style={styles.card}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.7}>
+            <Ionicons name="log-out-outline" size={18} color={COLORS.textDark} />
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+
+          {/* Hapus akun dinonaktifkan sementara, tinggal uncomment kalau sudah siap dipakai */}
+          {/* <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount} activeOpacity={0.7}>
+            <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
+            <Text style={styles.deleteText}>Hapus Akun</Text>
+          </TouchableOpacity> */}
+        </View>
       </ScrollView>
 
       <BottomNav />
@@ -217,57 +361,119 @@ export default function SettingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f7fb' },
-  content: { padding: 20, paddingBottom: 40 },
-  title: { fontSize: 24, fontWeight: '700', color: '#0f172a', marginBottom: 16 },
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  content: { padding: 20, paddingBottom: 110 },
+  title: { fontSize: 24, fontWeight: '700', color: COLORS.textDark, marginBottom: 16 },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: { color: COLORS.cardBg, fontSize: 22, fontWeight: '700' },
+  profileName: { fontSize: 16, fontWeight: '700', color: COLORS.textDark },
+  profileSub: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
   infoBox: {
-    backgroundColor: '#eef2ff',
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  infoIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 173, 181, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoLabel: { fontSize: 11, color: COLORS.textSecondary },
+  infoValue: { fontSize: 14, fontWeight: '700', color: COLORS.textDark, marginTop: 1 },
+  infoDivider: { height: 1, backgroundColor: '#eee', marginVertical: 12, marginLeft: 44 },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textDark },
+  card: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  label: { fontSize: 12.5, color: COLORS.textSecondary, marginBottom: 6, fontWeight: '600' },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#e0e0e0',
+    backgroundColor: COLORS.bg,
     borderRadius: 10,
-    padding: 12,
-    marginBottom: 20,
-  },
-  infoLabel: { fontSize: 12, color: '#4338ca', marginTop: 4 },
-  infoValue: { fontSize: 14, fontWeight: '600', color: '#1e1b4b' },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  label: { fontSize: 13, color: '#334155', marginBottom: 6, fontWeight: '600' },
-  input: {
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
-    backgroundColor: '#fff',
+    marginBottom: 14,
+    gap: 8,
   },
+  inputWrapperFocused: { borderColor: COLORS.accent },
+  input: { flex: 1, paddingVertical: 12, fontSize: 14, color: COLORS.textDark },
   button: {
-    backgroundColor: '#2563eb',
+    backgroundColor: COLORS.accent,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
-    marginBottom: 8,
+    marginTop: 2,
   },
-  buttonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  buttonDisabled: { opacity: 0.7 },
+  buttonText: { color: COLORS.cardBg, fontWeight: '700', fontSize: 15 },
   logoutButton: {
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
+    flexDirection: 'row',
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: '#e0e0e0',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 24,
+    justifyContent: 'center',
   },
-  logoutText: { color: '#334155', fontWeight: '700', fontSize: 15 },
+  logoutText: { color: COLORS.textDark, fontWeight: '700', fontSize: 15 },
   deleteButton: {
+    flexDirection: 'row',
+    gap: 8,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 12,
-    backgroundColor: '#fef2f2',
+    backgroundColor: COLORS.dangerBg,
   },
-  deleteText: { color: '#dc2626', fontWeight: '700', fontSize: 15 },
+  deleteText: { color: COLORS.danger, fontWeight: '700', fontSize: 15 },
 });

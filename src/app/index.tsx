@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { BarChart, LineChart } from 'react-native-chart-kit';
+import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '../components/BottomNav';
 import KelurahanAbjList from '../components/dashboard/KelurahanAbjList';
 import StatCard from '../components/dashboard/StatCard';
@@ -27,6 +28,9 @@ const COLORS = {
   textDark: '#222831',
   textSecondary: '#393E46',
   accent: '#00ADB5',
+  accentSoft: 'rgba(0, 173, 181, 0.1)',
+  danger: '#dc2626',
+  dangerSoft: 'rgba(220, 38, 38, 0.08)',
 };
 
 const chartConfig = {
@@ -39,6 +43,11 @@ const chartConfig = {
   propsForBackgroundLines: { stroke: '#e0e0e0' },
   style: { borderRadius: 16 },
 };
+
+function getInitial(name?: string, username?: string) {
+  const source = name || username || '?';
+  return source.trim().charAt(0).toUpperCase();
+}
 
 export default function HomeScreen() {
   const { user, logout } = useAuth();
@@ -97,25 +106,50 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.accent} />
         }
       >
-        <Text style={styles.title}>Pelaporan Jentik</Text>
-        <Text style={styles.subtitle}>Dashboard utama aplikasi</Text>
+        {/* Header */}
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Pelaporan Jentik</Text>
+            <Text style={styles.subtitle}>Dashboard utama aplikasi</Text>
+          </View>
+          <Pressable style={styles.logoutIconButton} onPress={logout} hitSlop={8}>
+            <Ionicons name="log-out-outline" size={18} color={COLORS.textSecondary} />
+          </Pressable>
+        </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Selamat datang {user?.name ?? user?.username}!</Text>
-          <Text style={styles.cardText}>
-            Anda dapat melihat data laporan, dashboard, dan analisa dari sini.
-          </Text>
+        {/* Greeting hero card */}
+        <View style={styles.heroCard}>
+          <View style={styles.heroAvatar}>
+            <Text style={styles.heroAvatarText}>{getInitial(user?.name, user?.username)}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.heroGreeting}>Selamat datang,</Text>
+            <Text style={styles.heroName} numberOfLines={1}>
+              {user?.name ?? user?.username}
+            </Text>
+            <Text style={styles.heroText}>
+              Lihat data laporan, dashboard, dan analisa dari sini.
+            </Text>
+          </View>
         </View>
 
         {loading ? (
           <ActivityIndicator size="large" color={COLORS.accent} style={styles.loadingIndicator} />
         ) : (
           <>
-            <Text style={styles.sectionTitle}>Overview {summary?.tahun ?? ''}</Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Overview</Text>
+              {summary?.tahun ? (
+                <View style={styles.yearBadge}>
+                  <Text style={styles.yearBadgeText}>{summary.tahun}</Text>
+                </View>
+              ) : null}
+            </View>
             <View style={styles.statGrid}>
               <StatCard label="Total Laporan" value={summary?.total_laporan ?? 0} accent={COLORS.accent} />
               <StatCard label="Rumah Diperiksa" value={summary?.total_rumah_diperiksa ?? 0} accent={COLORS.textDark} />
@@ -123,8 +157,13 @@ export default function HomeScreen() {
               <StatCard label="Kelurahan Tercakup" value={summary?.total_kelurahan_tercakup ?? 0} accent={COLORS.textSecondary} />
             </View>
 
-            <Text style={styles.sectionTitle}>Rumah Diperiksa per Bulan</Text>
             <View style={styles.chartCard}>
+              <View style={styles.chartCardHeader}>
+                <View style={styles.chartIconWrapper}>
+                  <Ionicons name="home-outline" size={15} color={COLORS.accent} />
+                </View>
+                <Text style={styles.chartCardTitle}>Rumah Diperiksa per Bulan</Text>
+              </View>
               {rumahPerBulan.some((item) => item.total_rumah > 0) ? (
                 <BarChart
                   data={rumahChartData}
@@ -138,12 +177,20 @@ export default function HomeScreen() {
                   style={styles.chart}
                 />
               ) : (
-                <Text style={styles.emptyText}>Belum ada data rumah diperiksa tahun ini.</Text>
+                <View style={styles.emptyWrapper}>
+                  <Ionicons name="bar-chart-outline" size={26} color="#c2c7cc" />
+                  <Text style={styles.emptyText}>Belum ada data rumah diperiksa tahun ini.</Text>
+                </View>
               )}
             </View>
 
-            <Text style={styles.sectionTitle}>ABJ per Bulan (%)</Text>
             <View style={styles.chartCard}>
+              <View style={styles.chartCardHeader}>
+                <View style={styles.chartIconWrapper}>
+                  <Ionicons name="trending-up-outline" size={15} color={COLORS.accent} />
+                </View>
+                <Text style={styles.chartCardTitle}>ABJ per Bulan (%)</Text>
+              </View>
               {abjPerBulan.some((item) => item.abj_persen > 0) ? (
                 <LineChart
                   data={abjChartData}
@@ -156,20 +203,24 @@ export default function HomeScreen() {
                   style={styles.chart}
                 />
               ) : (
-                <Text style={styles.emptyText}>Belum ada data ABJ tahun ini.</Text>
+                <View style={styles.emptyWrapper}>
+                  <Ionicons name="analytics-outline" size={26} color="#c2c7cc" />
+                  <Text style={styles.emptyText}>Belum ada data ABJ tahun ini.</Text>
+                </View>
               )}
             </View>
 
-            <Text style={styles.sectionTitle}>ABJ per Kelurahan</Text>
-            <View style={styles.chartCard}>
+            <View style={[styles.chartCard, { paddingBottom: 4 }]}>
+              <View style={styles.chartCardHeader}>
+                <View style={styles.chartIconWrapper}>
+                  <Ionicons name="location-outline" size={15} color={COLORS.accent} />
+                </View>
+                <Text style={styles.chartCardTitle}>ABJ per Kelurahan</Text>
+              </View>
               <KelurahanAbjList data={abjPerKelurahan} />
             </View>
           </>
         )}
-
-        <Pressable style={styles.button} onPress={logout}>
-          <Text style={styles.buttonText}>Logout</Text>
-        </Pressable>
       </ScrollView>
 
       <BottomNav />
@@ -180,29 +231,86 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   content: { padding: 20, paddingBottom: 40 },
-  title: { fontSize: 26, fontWeight: '700', color: COLORS.textDark, marginBottom: 4 },
-  subtitle: { fontSize: 14, color: COLORS.textSecondary, marginBottom: 20 },
-  card: {
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    padding: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-    marginBottom: 24,
+
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 18,
   },
-  cardTitle: { fontSize: 17, fontWeight: '700', marginBottom: 6, color: COLORS.textDark },
-  cardText: { fontSize: 13, color: COLORS.textSecondary, lineHeight: 20 },
-  loadingIndicator: { marginVertical: 30 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textDark, marginBottom: 12, marginTop: 4 },
-  statGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  title: { fontSize: 24, fontWeight: '700', color: COLORS.textDark, marginBottom: 2 },
+  subtitle: { fontSize: 13, color: COLORS.textSecondary },
+  logoutIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.cardBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+
+  heroCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 26,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  heroAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: COLORS.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroAvatarText: { color: COLORS.cardBg, fontSize: 20, fontWeight: '700' },
+  heroGreeting: { fontSize: 12, color: COLORS.textSecondary },
+  heroName: { fontSize: 17, fontWeight: '700', color: COLORS.textDark, marginTop: 1 },
+  heroText: { fontSize: 12.5, color: COLORS.textSecondary, marginTop: 4, lineHeight: 17 },
+
+  loadingIndicator: { marginVertical: 40 },
+
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textDark },
+  yearBadge: {
+    backgroundColor: COLORS.accentSoft,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
+  yearBadgeText: { fontSize: 11.5, fontWeight: '700', color: COLORS.accent },
+
+  statGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+
   chartCard: {
     backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 24,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 20,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -210,14 +318,29 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 1,
   },
-  chart: { borderRadius: 16 },
-  emptyText: { color: COLORS.textSecondary, fontSize: 13, paddingVertical: 20 },
-  button: {
-    backgroundColor: COLORS.accent,
-    paddingVertical: 14,
-    borderRadius: 10,
+  chartCardHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    gap: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
   },
-  buttonText: { color: COLORS.cardBg, fontWeight: '700', fontSize: 15 },
+  chartIconWrapper: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: COLORS.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chartCardTitle: { fontSize: 13.5, fontWeight: '700', color: COLORS.textDark },
+  chart: { borderRadius: 16 },
+
+  emptyWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 26,
+    gap: 8,
+  },
+  emptyText: { color: COLORS.textSecondary, fontSize: 12.5, textAlign: 'center' },
 });
