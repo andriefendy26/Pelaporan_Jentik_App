@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
@@ -13,6 +14,29 @@ import {
 import BottomNav from '../components/BottomNav';
 import { abjService } from '../services/Jentikservice';
 import { FormAbj } from '../types/abj';
+
+const COLORS = {
+  bg: '#EEEEEE',
+  cardBg: '#FFFFFF',
+  textDark: '#222831',
+  textSecondary: '#393E46',
+  accent: '#00ADB5',
+  danger: '#dc2626',
+  dangerBg: '#fdecea',
+};
+
+function formatTanggal(tanggal: string) {
+  try {
+    const date = new Date(tanggal);
+    return date.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+  } catch {
+    return tanggal;
+  }
+}
 
 export default function LaporanScreen() {
   const router = useRouter();
@@ -65,7 +89,7 @@ export default function LaporanScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#2563eb" />
+        <ActivityIndicator size="large" color={COLORS.accent} />
       </View>
     );
   }
@@ -73,9 +97,17 @@ export default function LaporanScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Laporan ABJ</Text>
-        <TouchableOpacity style={styles.addButton} onPress={() => router.push('/laporan-form')}>
-          <Text style={styles.addButtonText}>+ Tambah</Text>
+        <View>
+          <Text style={styles.title}>Laporan ABJ</Text>
+          <Text style={styles.subtitle}>{data.length} laporan tercatat</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => router.push('/laporan-form')}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="add" size={18} color={COLORS.cardBg} />
+          <Text style={styles.addButtonText}>Tambah</Text>
         </TouchableOpacity>
       </View>
 
@@ -83,25 +115,44 @@ export default function LaporanScreen() {
         data={data}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.accent} />
+        }
         ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            Belum ada laporan. Tap &quot;+ Tambah&quot; untuk membuat.
-          </Text>
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIconWrapper}>
+              <Ionicons name="document-text-outline" size={32} color={COLORS.accent} />
+            </View>
+            <Text style={styles.emptyTitle}>Belum ada laporan</Text>
+            <Text style={styles.emptyText}>
+              Tap tombol &quot;Tambah&quot; di atas untuk membuat laporan pertamamu.
+            </Text>
+          </View>
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
             <TouchableOpacity
               style={styles.cardBody}
               onPress={() => router.push(`/laporan-form?id=${item.id}`)}
+              activeOpacity={0.7}
             >
-              <Text style={styles.cardDate}>{item.tanggal_pemeriksaan}</Text>
-              <Text style={styles.cardSubtitle}>
-                {item.items_abj?.length ?? 0} data kepala keluarga
-              </Text>
+              <View style={styles.cardIconWrapper}>
+                <Ionicons name="calendar-outline" size={20} color={COLORS.accent} />
+              </View>
+              <View style={styles.cardTextWrapper}>
+                <Text style={styles.cardDate}>{formatTanggal(item.tanggal_pemeriksaan)}</Text>
+                <Text style={styles.cardSubtitle}>
+                  {item.items_abj?.length ?? 0} data kepala keluarga
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#b0b4ba" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item)}>
-              <Text style={styles.deleteText}>Hapus</Text>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => handleDelete(item)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
             </TouchableOpacity>
           </View>
         )}
@@ -113,42 +164,91 @@ export default function LaporanScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f7fb' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bg },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingBottom: 8,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
   },
-  title: { fontSize: 24, fontWeight: '700', color: '#0f172a' },
+  title: { fontSize: 24, fontWeight: '700', color: COLORS.textDark },
+  subtitle: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
   addButton: {
-    backgroundColor: '#2563eb',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.accent,
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 4,
   },
-  addButtonText: { color: '#fff', fontWeight: '600' },
-  listContent: { paddingHorizontal: 20, paddingBottom: 100 },
-  emptyText: { textAlign: 'center', color: '#64748b', marginTop: 40 },
+  addButtonText: { color: COLORS.cardBg, fontWeight: '700', fontSize: 13 },
+  listContent: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 110 },
+  emptyState: {
+    alignItems: 'center',
+    marginTop: 60,
+    paddingHorizontal: 32,
+  },
+  emptyIconWrapper: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(0, 173, 181, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.textDark,
+    marginBottom: 6,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    lineHeight: 20,
+  },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 14,
     marginBottom: 12,
     flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
     overflow: 'hidden',
   },
-  cardBody: { flex: 1, padding: 14 },
-  cardDate: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
-  cardSubtitle: { fontSize: 13, color: '#64748b', marginTop: 4 },
+  cardBody: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    gap: 12,
+  },
+  cardIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 173, 181, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardTextWrapper: { flex: 1 },
+  cardDate: { fontSize: 15, fontWeight: '700', color: COLORS.textDark },
+  cardSubtitle: { fontSize: 12.5, color: COLORS.textSecondary, marginTop: 2 },
   deleteButton: {
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
-    backgroundColor: '#fef2f2',
+    alignSelf: 'stretch',
+    backgroundColor: COLORS.dangerBg,
   },
-  deleteText: { color: '#dc2626', fontWeight: '600', fontSize: 13 },
 });
