@@ -1,6 +1,10 @@
+import NetInfo from '@react-native-community/netinfo';
+import { getQueue, PendingLaporan } from '../services/offlineQueue';
+import { syncPendingLaporan, getSyncStatus } from '../services/syncService';
+
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -57,6 +61,9 @@ export default function LaporanScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [pendingItems, setPendingItems] = useState<PendingLaporan[]>([]);
+  const [syncing, setSyncing] = useState(false);
+const [needsReauth, setNeedsReauth] = useState(false)
   // --- state filter ---
   const [filterVisible, setFilterVisible] = useState(false);
   const [startDate, setStartDate] = useState(''); // draft di dalam modal
@@ -69,6 +76,20 @@ export default function LaporanScreen() {
   const [appliedSortOrder, setAppliedSortOrder] = useState<SortOrder>('newest');
 
   const isFilterActive = !!appliedStartDate || !!appliedEndDate || appliedSortOrder !== 'newest';
+  
+  const loadPending = async () => {
+    const status = await getSyncStatus();
+    setPendingItems(await getQueue());
+    setNeedsReauth(status.needsReauth);
+  };
+
+  const runSync = async () => {
+    setSyncing(true);
+    await syncPendingLaporan();
+    await loadPending(); // ini sekarang juga update needsReauth
+    await loadData();
+    setSyncing(false);
+  };
 
   const loadData = async () => {
     try {
@@ -85,9 +106,26 @@ export default function LaporanScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
+      loadPending();
+      runSync();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const online = !!state.isConnected && state.isInternetReachable !== false;
+      if (online) runSync();
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     loadData();
+  //     // eslint-disable-next-line react-hooks/exhaustive-deps
+  //   }, [])
+  // );
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -220,6 +258,23 @@ export default function LaporanScreen() {
             <Ionicons name="close-circle" size={16} color={COLORS.textSecondary} />
           </TouchableOpacity>
         </View>
+      )}
+
+      {pendingItems.length > 0 && (
+        <TouchableOpacity style={styles.pendingBanner} onPress={runSync} activeOpacity={0.8} disabled={syncing}>
+          <Ionicons
+            name={needsReauth ? 'lock-closed-outline' : 'cloud-upload-outline'}
+            size={16}
+            color={needsReauth ? COLORS.danger : COLORS.accent}
+          />
+          <Text style={styles.pendingBannerText}>
+            {syncing
+              ? 'Menyinkronkan...'
+              : needsReauth
+              ? `Sesi login berakhir. Login ulang untuk menyinkronkan ${pendingItems.length} laporan.`
+              : `${pendingItems.length} laporan menunggu sinkronisasi. Tap untuk coba sekarang.`}
+          </Text>
+        </TouchableOpacity>
       )}
 
       <FlatList
@@ -381,6 +436,18 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '700', color: COLORS.textDark },
   subtitle: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  pendingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(0, 173, 181, 0.1)',
+    borderRadius: 10,
+  },
+  pendingBannerText: { flex: 1, fontSize: 12, color: COLORS.textDark, fontWeight: '600' },
   filterButton: {
     width: 40,
     height: 40,

@@ -1,3 +1,7 @@
+import { useNetworkStatus, checkIsOnline } from '../hooks/useNetworkStatus';
+import { enqueueLaporan } from '../services/offlineQueue';
+import { syncPendingLaporan } from '../services/syncService';
+
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -61,6 +65,8 @@ function parseApiDate(value?: string): Date | null {
 export default function LaporanFormScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const isOnline = useNetworkStatus();
+
   const isEdit = !!id;
   const { user } = useAuth();
 
@@ -121,7 +127,7 @@ export default function LaporanFormScreen() {
     setShowDatePicker(false);
   };
 
-  const handleSubmit = async () => {
+ const handleSubmit = async () => {
     if (!user?.id_kelurahan || !user?.id_rt) {
       Alert.alert(
         'Data user tidak lengkap',
@@ -129,17 +135,14 @@ export default function LaporanFormScreen() {
       );
       return;
     }
-
     if (!tanggalPemeriksaan) {
       Alert.alert('Validasi', 'Tanggal pemeriksaan wajib diisi.');
       return;
     }
-
     if (tanggalPemeriksaan.getTime() > today.getTime()) {
       Alert.alert('Validasi', 'Tanggal pemeriksaan tidak boleh di masa depan.');
       return;
     }
-
     if (!items || items.length === 0) {
       Alert.alert('Validasi', 'Minimal harus ada 1 data kepala keluarga yang diisi.');
       return;
@@ -154,17 +157,42 @@ export default function LaporanFormScreen() {
 
     setSubmitting(true);
     try {
+      const online = await checkIsOnline();
+
+      if (!online) {
+        await enqueueLaporan(payload, isEdit ? 'update' : 'create', isEdit ? (id as string) : undefined);
+        Alert.alert(
+          'Tersimpan offline',
+          'Kamu sedang tidak terhubung ke internet. Laporan disimpan di perangkat dan akan otomatis disinkronkan saat online kembali.',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+        return;
+      }
+
       if (isEdit) {
         await abjService.update(id as string, payload);
       } else {
         await abjService.create(payload);
       }
+
+      // sekalian sinkronkan laporan offline lain yang masih tertunda
+      syncPendingLaporan();
+
       Alert.alert('Berhasil', isEdit ? 'Data berhasil diperbarui' : 'Data berhasil disimpan', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error: any) {
-      const message =
-        error?.response?.data?.message ?? 'Gagal menyimpan data, periksa koneksi kamu.';
+      if (!error?.response) {
+        // koneksi terputus di tengah proses -> fallback simpan offline
+        await enqueueLaporan(payload, isEdit ? 'update' : 'create', isEdit ? (id as string) : undefined);
+        Alert.alert(
+          'Tersimpan offline',
+          'Koneksi terputus. Laporan disimpan di perangkat dan akan disinkronkan otomatis nanti.',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+        return;
+      }
+      const message = error?.response?.data?.message ?? 'Gagal menyimpan data, periksa koneksi kamu.';
       Alert.alert('Gagal', message);
     } finally {
       setSubmitting(false);
@@ -197,6 +225,13 @@ export default function LaporanFormScreen() {
         </Text>
         <View style={styles.headerSpacer} />
       </View>
+
+      {!isOnline && (
+        <View style={styles.offlineBadge}>
+          <Ionicons name="cloud-offline-outline" size={12} color={COLORS.danger} />
+          <Text style={styles.offlineBadgeText}>Mode offline</Text>
+        </View>
+      )}
 
       <ScrollView
         style={styles.container}
@@ -346,6 +381,17 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     backgroundColor: COLORS.bg,
   },
+    offlineBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.dangerSoft,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginTop: 4,
+  },
+  offlineBadgeText: { fontSize: 10.5, color: COLORS.danger, fontWeight: '700' },
   backButton: {
     width: 38,
     height: 38,

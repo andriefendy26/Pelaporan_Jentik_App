@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '../../api/client';
 import { User, LoginResponse, ApiMessageResponse } from '../../types/auth';
+import { syncPendingLaporan } from '../syncService';
 
 interface AuthContextData {
   user: User | null;
@@ -55,6 +56,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setToken(authToken);
       setUser(authUser);
+
+      syncPendingLaporan();
 
       return { success: true, message: response.data.message };
     } catch (error: any) {
