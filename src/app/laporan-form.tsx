@@ -1,15 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -24,17 +25,38 @@ const COLORS = {
   textDark: '#222831',
   textSecondary: '#393E46',
   accent: '#00ADB5',
+  accentSoft: 'rgba(0, 173, 181, 0.1)',
+  danger: '#dc2626',
+  dangerSoft: 'rgba(220, 38, 38, 0.08)',
+  border: '#e0e0e0',
 };
 
-function todayString() {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
+const BULAN_NAMA = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+];
+
+function toDateOnly(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function toApiDateString(date: Date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
 }
 
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+function toDisplayDateString(date: Date) {
+  return `${date.getDate()} ${BULAN_NAMA[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+function parseApiDate(value?: string): Date | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return toDateOnly(parsed);
+}
 
 export default function LaporanFormScreen() {
   const router = useRouter();
@@ -42,11 +64,14 @@ export default function LaporanFormScreen() {
   const isEdit = !!id;
   const { user } = useAuth();
 
-  const [tanggalPemeriksaan, setTanggalPemeriksaan] = useState('');
+  const [tanggalPemeriksaan, setTanggalPemeriksaan] = useState<Date | null>(null);
   const [items, setItems] = useState<ItemAbj[]>([]);
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
-  const [dateFocused, setDateFocused] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [tempDate, setTempDate] = useState<Date>(new Date());
+
+  const today = toDateOnly(new Date());
 
   useEffect(() => {
     if (isEdit) {
@@ -59,7 +84,8 @@ export default function LaporanFormScreen() {
     try {
       const response = await abjService.getById(id as string);
       const form = response?.data?.data;
-      setTanggalPemeriksaan(form?.tanggal_pemeriksaan?.slice(0, 10) ?? '');
+      const parsed = parseApiDate(form?.tanggal_pemeriksaan);
+      setTanggalPemeriksaan(parsed);
       setItems(form?.items_abj ?? []);
     } catch (error: any) {
       Alert.alert('Gagal memuat data', error?.response?.data?.message ?? 'Terjadi kesalahan');
@@ -67,6 +93,32 @@ export default function LaporanFormScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openDatePicker = () => {
+    setTempDate(tanggalPemeriksaan ?? today);
+    setShowDatePicker(true);
+  };
+
+  const handleDateChange = (event: { nativeEvent: { timestamp: number } }, date: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+      if (date) {
+        setTanggalPemeriksaan(toDateOnly(date));
+      }
+      return;
+    }
+    // iOS: update tanggal sementara, dikonfirmasi lewat tombol "Pilih"
+    if (date) setTempDate(date);
+  };
+
+  const handleDatePickerDismiss = () => {
+    setShowDatePicker(false);
+  };
+
+  const confirmIosDate = () => {
+    setTanggalPemeriksaan(toDateOnly(tempDate));
+    setShowDatePicker(false);
   };
 
   const handleSubmit = async () => {
@@ -79,19 +131,24 @@ export default function LaporanFormScreen() {
     }
 
     if (!tanggalPemeriksaan) {
-      Alert.alert('Validasi', 'Tanggal pemeriksaan wajib diisi (format YYYY-MM-DD).');
+      Alert.alert('Validasi', 'Tanggal pemeriksaan wajib diisi.');
       return;
     }
 
-    if (!DATE_REGEX.test(tanggalPemeriksaan)) {
-      Alert.alert('Validasi', 'Format tanggal harus YYYY-MM-DD, contoh: 2026-07-10.');
+    if (tanggalPemeriksaan.getTime() > today.getTime()) {
+      Alert.alert('Validasi', 'Tanggal pemeriksaan tidak boleh di masa depan.');
+      return;
+    }
+
+    if (!items || items.length === 0) {
+      Alert.alert('Validasi', 'Minimal harus ada 1 data kepala keluarga yang diisi.');
       return;
     }
 
     const payload = {
       id_kelurahan: user.id_kelurahan,
       id_rt: user.id_rt,
-      tanggal_pemeriksaan: tanggalPemeriksaan,
+      tanggal_pemeriksaan: toApiDateString(tanggalPemeriksaan),
       ItemsABJ: items,
     };
 
@@ -128,13 +185,13 @@ export default function LaporanFormScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.header}>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons name="arrow-back" size={22} color={COLORS.textDark} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <Text style={styles.headerTitle}>
           {isEdit ? 'Edit Laporan ABJ' : 'Tambah Laporan ABJ'}
         </Text>
@@ -171,30 +228,38 @@ export default function LaporanFormScreen() {
         </View>
 
         {/* Tanggal pemeriksaan */}
-        <Text style={styles.sectionLabel}>Tanggal Pemeriksaan</Text>
-        <View style={[styles.inputWrapper, dateFocused && styles.inputWrapperFocused]}>
-          <Ionicons name="calendar-outline" size={18} color={COLORS.textSecondary} />
-          <TextInput
-            style={styles.input}
-            placeholder="YYYY-MM-DD, contoh: 2026-07-10"
-            placeholderTextColor="#9aa0a6"
-            value={tanggalPemeriksaan}
-            onChangeText={setTanggalPemeriksaan}
-            onFocus={() => setDateFocused(true)}
-            onBlur={() => setDateFocused(false)}
-            keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'}
-          />
+        <View style={styles.sectionHeaderRow}>
+          <Ionicons name="calendar-outline" size={15} color={COLORS.accent} />
+          <Text style={styles.sectionLabel}>Tanggal Pemeriksaan</Text>
+        </View>
+
+        <TouchableOpacity style={styles.dateWrapper} onPress={openDatePicker} activeOpacity={0.7}>
+          <View style={styles.dateIconWrapper}>
+            <Ionicons name="calendar" size={18} color={COLORS.accent} />
+          </View>
+          <Text style={[styles.dateText, !tanggalPemeriksaan && styles.datePlaceholder]}>
+            {tanggalPemeriksaan ? toDisplayDateString(tanggalPemeriksaan) : 'Pilih tanggal pemeriksaan'}
+          </Text>
           <TouchableOpacity
             style={styles.todayButton}
-            onPress={() => setTanggalPemeriksaan(todayString())}
+            onPress={() => setTanggalPemeriksaan(today)}
+            hitSlop={8}
           >
             <Text style={styles.todayButtonText}>Hari ini</Text>
           </TouchableOpacity>
-        </View>
-        <Text style={styles.helperText}>Format: tahun-bulan-tanggal (YYYY-MM-DD)</Text>
+        </TouchableOpacity>
+        <Text style={styles.helperText}>Tanggal tidak boleh melebihi hari ini.</Text>
 
         {/* Data pemeriksaan */}
-        <Text style={styles.sectionLabel}>Data Kepala Keluarga</Text>
+        <View style={styles.sectionHeaderRow}>
+          <Ionicons name="people-outline" size={15} color={COLORS.accent} />
+          <Text style={styles.sectionLabel}>Data Kepala Keluarga</Text>
+          {items.length > 0 ? (
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>{items.length}</Text>
+            </View>
+          ) : null}
+        </View>
         <View style={styles.repeaterCard}>
           <ItemsAbjRepeater items={items} onChange={setItems} />
         </View>
@@ -226,6 +291,45 @@ export default function LaporanFormScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Date picker: Android tampil native dialog langsung */}
+      {showDatePicker && Platform.OS === 'android' && (
+      <DateTimePicker
+        value={tempDate}
+        mode="date"
+        display="calendar"
+        maximumDate={today}
+        onValueChange={handleDateChange}
+        onDismiss={handleDatePickerDismiss}
+      />
+    )}
+
+      {/* Date picker: iOS pakai modal spinner + tombol konfirmasi */}
+      {Platform.OS === 'ios' && (
+        <Modal visible={showDatePicker} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalSheet}>
+              <View style={styles.modalHeader}>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text style={styles.modalCancel}>Batal</Text>
+                </TouchableOpacity>
+                <Text style={styles.modalTitle}>Pilih Tanggal</Text>
+                <TouchableOpacity onPress={confirmIosDate}>
+                  <Text style={styles.modalConfirm}>Pilih</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={tempDate}
+                mode="date"
+                display="spinner"
+                maximumDate={today}
+                onValueChange={handleDateChange}
+                style={{ alignSelf: 'center' }}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -249,6 +353,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBg,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   headerTitle: {
     fontSize: 17,
@@ -259,9 +368,9 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingTop: 4, paddingBottom: 24 },
   infoBox: {
     backgroundColor: COLORS.cardBg,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 22,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -277,7 +386,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(0, 173, 181, 0.1)',
+    backgroundColor: COLORS.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -289,36 +398,61 @@ const styles = StyleSheet.create({
     marginVertical: 12,
     marginLeft: 44,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
   sectionLabel: {
     fontSize: 14,
     fontWeight: '700',
     color: COLORS.textDark,
-    marginBottom: 8,
   },
-  inputWrapper: {
+  countBadge: {
+    backgroundColor: COLORS.accentSoft,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countBadgeText: { fontSize: 11, fontWeight: '700', color: COLORS.accent },
+  dateWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.cardBg,
     borderWidth: 1.5,
-    borderColor: '#e0e0e0',
-    borderRadius: 10,
+    borderColor: COLORS.border,
+    borderRadius: 14,
     paddingHorizontal: 12,
-    gap: 8,
+    paddingVertical: 10,
+    gap: 10,
   },
-  inputWrapperFocused: {
-    borderColor: COLORS.accent,
+  dateIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  input: {
+  dateText: {
     flex: 1,
-    paddingVertical: 12,
     fontSize: 14,
+    fontWeight: '600',
     color: COLORS.textDark,
+  },
+  datePlaceholder: {
+    color: '#9aa0a6',
+    fontWeight: '400',
   },
   todayButton: {
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 8,
-    backgroundColor: 'rgba(0, 173, 181, 0.1)',
+    backgroundColor: COLORS.accentSoft,
   },
   todayButtonText: {
     fontSize: 12,
@@ -329,12 +463,12 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: COLORS.textSecondary,
     marginTop: 6,
-    marginBottom: 20,
+    marginBottom: 22,
     marginLeft: 2,
   },
   repeaterCard: {
     backgroundColor: COLORS.cardBg,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -347,13 +481,13 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 24 : 16,
     backgroundColor: COLORS.bg,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: COLORS.border,
   },
   submitButton: {
     flexDirection: 'row',
     gap: 8,
     backgroundColor: COLORS.accent,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 15,
     alignItems: 'center',
     justifyContent: 'center',
@@ -362,4 +496,27 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   submitText: { color: COLORS.cardBg, fontWeight: '700', fontSize: 15 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: COLORS.cardBg,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 24,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textDark },
+  modalCancel: { fontSize: 14, color: COLORS.textSecondary },
+  modalConfirm: { fontSize: 14, fontWeight: '700', color: COLORS.accent },
 });
