@@ -27,9 +27,13 @@ const emptyItem = (): ItemAbj => ({
 });
 
 // Hanya izinkan digit 0-9
-function sanitizeNumeric(text: string) {
-  return text.replace(/[^0-9]/g, '');
-}
+// Hanya izinkan digit 0-9, dan hapus angka nol di depan (leading zero)
+  function sanitizeNumeric(text: string) {
+    const digitsOnly = text.replace(/[^0-9]/g, '');
+    // hapus semua '0' di awal selama masih diikuti digit lain, misal "007" -> "7", "01" -> "1"
+    // tapi "0" tunggal tetap "0"
+    return digitsOnly.replace(/^0+(?=\d)/, '');
+  }
 
 export default function ItemsAbjRepeater({ items, onChange }: Props) {
   const updateItem = (index: number, field: keyof ItemAbj, value: string) => {
