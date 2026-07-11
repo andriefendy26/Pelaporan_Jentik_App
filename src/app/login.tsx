@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StatusBar,
+  StatusBarStyle,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../services/Context/AuthContext';
 
 const COLORS = {
@@ -18,7 +22,15 @@ const COLORS = {
   textDark: '#222831',
   textSecondary: '#393E46',
   accent: '#00ADB5',
+  accentDark: '#0C7489',
+  accentDeep: '#075364',
+  ripple: 'rgba(255,255,255,0.10)',
+  rippleSoft: 'rgba(255,255,255,0.06)',
+  danger: '#dc2626',
 };
+
+const STYLES = ['default', 'dark-content', 'light-content'] as const;
+const TRANSITIONS = ['fade', 'slide', 'none'] as const;
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -45,109 +57,166 @@ export default function LoginScreen() {
     if (!result.success) {
       setErrorMsg(result.message);
     }
-    // Jika sukses, redirect otomatis ditangani oleh app/_layout.tsx
   }
 
+    const [hidden, setHidden] = useState(false);
+  const [statusBarStyle, setStatusBarStyle] = useState<StatusBarStyle>(
+    STYLES[0],
+  );
+  const [statusBarTransition, setStatusBarTransition] = useState<
+    'fade' | 'slide' | 'none'
+  >(TRANSITIONS[0]);
+
+  const changeStatusBarVisibility = () => setHidden(!hidden);
+
+  const changeStatusBarStyle = () => {
+    const styleId = STYLES.indexOf(statusBarStyle) + 1;
+    if (styleId === STYLES.length) {
+      setStatusBarStyle(STYLES[0]);
+    } else {
+      setStatusBarStyle(STYLES[styleId]);
+    }
+  };
+
+  const changeStatusBarTransition = () => {
+    const transition = TRANSITIONS.indexOf(statusBarTransition) + 1;
+    if (transition === TRANSITIONS.length) {
+      setStatusBarTransition(TRANSITIONS[0]);
+    } else {
+      setStatusBarTransition(TRANSITIONS[transition]);
+    }
+  };
+
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+          <StatusBar
+          animated={true}
+          backgroundColor="#61dafb"
+          barStyle={statusBarStyle}
+          showHideTransition={statusBarTransition}
+          hidden={hidden}
+        />
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* Logo / Brand mark */}
-        <View style={styles.logoCircle}>
-          <Text style={styles.logoText}>A</Text>
-        </View>
+    
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          {/* Hero */}
+          <View style={styles.hero}>
+            {/* Ilustrasi riak air — representasi jentik/penampungan air */}
+            <View style={styles.rippleWrapper} pointerEvents="none">
+              <View style={[styles.rippleRing, styles.rippleRingOuter]} />
+              <View style={[styles.rippleRing, styles.rippleRingMid]} />
+              <View style={[styles.rippleRing, styles.rippleRingInner]} />
+            </View>
 
-        <Text style={styles.title}>Selamat Datang</Text>
-        <Text style={styles.subtitle}>Masuk untuk melanjutkan</Text>
+            <View style={styles.heroIconWrapper}>
+              <Ionicons name="water" size={30} color={COLORS.accentDeep} />
+            </View>
 
-        <View style={styles.card}>
-          {/* Username field */}
-          <Text style={styles.label}>Username</Text>
-          <View
-            style={[
-              styles.inputWrapper,
-              focusedField === 'username' && styles.inputWrapperFocused,
-            ]}
-          >
-            <TextInput
-              style={styles.input}
-              placeholder="Masukkan username"
-              placeholderTextColor="#9aa0a6"
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={username}
-              onChangeText={setUsername}
-              onFocus={() => setFocusedField('username')}
-              onBlur={() => setFocusedField(null)}
-            />
+            <Text style={styles.heroEyebrow}>Pelaporan Jentik</Text>
+            <Text style={styles.heroTitle}>SI Jumantik</Text>
+            <Text style={styles.heroSubtitle}>Masuk untuk mulai memeriksa & melapor</Text>
           </View>
 
-          {/* Password field */}
-          <Text style={styles.label}>Password</Text>
-          <View
-            style={[
-              styles.inputWrapper,
-              focusedField === 'password' && styles.inputWrapperFocused,
-            ]}
-          >
-            <TextInput
-              style={styles.input}
-              placeholder="Masukkan password"
-              placeholderTextColor="#9aa0a6"
-              secureTextEntry={!showPassword}
-              value={password}
-              onChangeText={setPassword}
-              onFocus={() => setFocusedField('password')}
-              onBlur={() => setFocusedField(null)}
-            />
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          {/* Card login, menumpuk di atas hero */}
+          <View style={styles.card}>
+            <Text style={styles.label}>Username</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                focusedField === 'username' && styles.inputWrapperFocused,
+              ]}
             >
-              <Text style={styles.toggleText}>
-                {showPassword ? 'Sembunyikan' : 'Lihat'}
-              </Text>
+              <Ionicons
+                name="person-outline"
+                size={18}
+                color={focusedField === 'username' ? COLORS.accent : '#9aa0a6'}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Masukkan username"
+                placeholderTextColor="#9aa0a6"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={username}
+                onChangeText={setUsername}
+                onFocus={() => setFocusedField('username')}
+                onBlur={() => setFocusedField(null)}
+              />
+            </View>
+
+            <Text style={styles.label}>Password</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                focusedField === 'password' && styles.inputWrapperFocused,
+              ]}
+            >
+              <Ionicons
+                name="lock-closed-outline"
+                size={18}
+                color={focusedField === 'password' ? COLORS.accent : '#9aa0a6'}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Masukkan password"
+                placeholderTextColor="#9aa0a6"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField(null)}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={18}
+                  color="#9aa0a6"
+                />
+              </TouchableOpacity>
+            </View>
+
+            {errorMsg ? (
+              <View style={styles.errorBox}>
+                <Ionicons name="alert-circle-outline" size={15} color={COLORS.danger} />
+                <Text style={styles.error}>{errorMsg}</Text>
+              </View>
+            ) : null}
+
+            <TouchableOpacity
+              style={[styles.button, isSubmitting && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={isSubmitting}
+              activeOpacity={0.85}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color={COLORS.cardBg} />
+              ) : (
+                <>
+                  <Text style={styles.buttonText}>Masuk</Text>
+                  <Ionicons name="arrow-forward" size={17} color={COLORS.cardBg} />
+                </>
+              )}
             </TouchableOpacity>
           </View>
 
-          {errorMsg ? (
-            <View style={styles.errorBox}>
-              <Text style={styles.error}>{errorMsg}</Text>
-            </View>
-          ) : null}
-
-          <TouchableOpacity
-            style={[styles.button, isSubmitting && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={isSubmitting}
-            activeOpacity={0.85}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color={COLORS.cardBg} />
-            ) : (
-              <Text style={styles.buttonText}>Masuk</Text>
-            )}
-          </TouchableOpacity>
-
-          {/* <TouchableOpacity style={styles.forgotWrapper}>
-            <Text style={styles.forgotText}>Lupa password?</Text>
-          </TouchableOpacity> */}
-        </View>
-
-        {/* <View style={styles.footer}>
-          <Text style={styles.footerText}>Belum punya akun? </Text>
-          <TouchableOpacity>
-            <Text style={styles.footerLink}>Daftar sekarang</Text>
-          </TouchableOpacity>
-        </View> */}
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <Text style={styles.footerNote}>
+            Akses khusus petugas Puskesmas & kader pemantau jentik
+          </Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
+        <StatusBar/>
+    </SafeAreaView>
   );
 }
 
@@ -158,50 +227,101 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
+    paddingBottom: 32,
   },
-  logoCircle: {
-    alignSelf: 'center',
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: COLORS.accent,
-    justifyContent: 'center',
+
+  hero: {
+    backgroundColor: COLORS.accentDark,
+    paddingTop: 64,
+    paddingBottom: 72,
+    paddingHorizontal: 24,
     alignItems: 'center',
-    marginBottom: 16,
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
+    overflow: 'hidden',
   },
-  logoText: {
-    color: COLORS.cardBg,
-    fontSize: 28,
-    fontWeight: '700',
+  rippleWrapper: {
+    position: 'absolute',
+    top: -30,
+    alignSelf: 'center',
+    width: 260,
+    height: 260,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    textAlign: 'center',
-    color: COLORS.textDark,
-    marginBottom: 4,
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.accentDark, // samakan dengan warna hero, biar area status bar nyambung mulus
   },
-  subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    color: COLORS.textSecondary,
-    marginBottom: 28,
+  rippleRing: {
+    position: 'absolute',
+    borderRadius: 999,
+    borderWidth: 1.5,
   },
-  card: {
+  rippleRingOuter: {
+    width: 260,
+    height: 260,
+    borderColor: COLORS.rippleSoft,
+  },
+  rippleRingMid: {
+    width: 190,
+    height: 190,
+    borderColor: COLORS.ripple,
+  },
+  rippleRingInner: {
+    width: 130,
+    height: 130,
+    backgroundColor: COLORS.ripple,
+    borderColor: 'transparent',
+  },
+  heroIconWrapper: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  heroEyebrow: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 11.5,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    marginBottom: 4,
+  },
+  heroTitle: {
+    color: COLORS.cardBg,
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  heroSubtitle: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
+    marginTop: 6,
+    textAlign: 'center',
+  },
+
+  card: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 20,
+    padding: 22,
+    marginHorizontal: 22,
+    marginTop: -40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 5,
   },
   label: {
     color: COLORS.textDark,
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '600',
     marginBottom: 6,
     marginTop: 4,
@@ -209,15 +329,17 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
     borderWidth: 1.5,
-    borderColor: '#e0e0e0',
+    borderColor: '#e5e7eb',
     backgroundColor: COLORS.bg,
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 14,
     marginBottom: 16,
   },
   inputWrapperFocused: {
     borderColor: COLORS.accent,
+    backgroundColor: '#F0FBFC',
   },
   input: {
     flex: 1,
@@ -225,28 +347,28 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.textDark,
   },
-  toggleText: {
-    color: COLORS.accent,
-    fontSize: 13,
-    fontWeight: '600',
-    paddingLeft: 8,
-  },
   errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: 'rgba(220, 38, 38, 0.08)',
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 10,
     marginBottom: 16,
   },
   error: {
-    color: '#dc2626',
-    textAlign: 'center',
-    fontSize: 13,
+    color: COLORS.danger,
+    fontSize: 12.5,
+    flex: 1,
   },
   button: {
+    flexDirection: 'row',
+    gap: 8,
     backgroundColor: COLORS.accent,
-    borderRadius: 10,
+    borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 4,
   },
   buttonDisabled: {
@@ -254,30 +376,15 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: COLORS.cardBg,
-    fontSize: 16,
+    fontSize: 15.5,
     fontWeight: '700',
   },
-  forgotWrapper: {
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  forgotText: {
-    color: COLORS.accent,
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 24,
-  },
-  footerText: {
+
+  footerNote: {
+    textAlign: 'center',
     color: COLORS.textSecondary,
-    fontSize: 13,
-  },
-  footerLink: {
-    color: COLORS.accent,
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 11.5,
+    marginTop: 20,
+    paddingHorizontal: 40,
   },
 });

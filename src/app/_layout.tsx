@@ -73,7 +73,7 @@ function RootNavigation() {
         headerRight: () => <HeaderUserInfo />,
       }}
     >
-      <Stack.Screen name="login" options={{ headerRight: () => null}} />
+      <Stack.Screen name="login" options={{ headerShown: false ,headerRight: () => null}} />
     </Stack>
   );
 }
