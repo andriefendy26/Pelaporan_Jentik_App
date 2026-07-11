@@ -1,6 +1,8 @@
 export default ({ config }: { config: any }) => ({
   ...config,
+  
   extra: {
-    apiUrl: process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8000/api',
+    apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://sijumantik.my.id/api',
+    ...config.extra
   },
 });

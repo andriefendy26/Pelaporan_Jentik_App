@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "Pelaporan_Jentik_App",
-    "slug": "Pelaporan_Jentik_App",
+    "name": "SI-Jumantik",
+    "slug": "SI-Jumantik",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "pelaporanjentikapp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/icon.png"
     },
     "android": {
       "adaptiveIcon": {
@@ -30,7 +30,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",
-          "image": "./assets/images/devhive.png",
+          "image": "./assets/images/icon.png",
           "imageWidth": 76
         }
       ]
@@ -41,9 +41,11 @@
     },
     "extra": {
       "router": {},
+      "apiUrl": "https://sijumantik.my.id/api",
       "eas": {
         "projectId": "2e3dd9bf-4596-44c3-b294-b61ae7d86821"
       }
-    }
+    },
+    "owner": "andriefendy"
   }
 }

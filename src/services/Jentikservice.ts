@@ -20,7 +20,7 @@ export const authService = {
       transformRequest: [(data) => data],
     });
   },
-  logout: () => apiClient.post('/logout'),
+  logout: () => apiClient.get('/logout'),
 };
 
 export const abjService = {

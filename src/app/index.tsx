@@ -162,7 +162,7 @@ export default function HomeScreen() {
       <View style={styles.infoCtaRow}>
         <TouchableOpacity
           style={styles.infoCtaCard}
-          onPress={() => Linking.openURL('https://contoh-link-buku-petunjuk.pdf')}
+          onPress={() => Linking.openURL('https://sijumantik.my.id/storage/panduan/panduan-pengguna.pdf')}
           activeOpacity={0.85}
         >
           <View style={[styles.infoCtaIconWrapper, { backgroundColor: 'rgba(0, 173, 181, 0.12)' }]}>
@@ -174,7 +174,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={styles.infoCtaCard}
-          onPress={() => Linking.openURL('https://contoh-link-informasi-dbd.com')}
+          onPress={() => Linking.openURL('https://sijumantik.my.id/storage/informasi/informasi.png')}
           activeOpacity={0.85}
         >
           <View style={[styles.infoCtaIconWrapper, { backgroundColor: 'rgba(220, 38, 38, 0.1)' }]}>

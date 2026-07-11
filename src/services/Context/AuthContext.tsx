@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function logout() {
     try {
-      await apiClient.post<ApiMessageResponse>('/logout');
+      await apiClient.get<ApiMessageResponse>('/logout');
     } catch (error) {
       // Tetap lanjut hapus sesi lokal walau request logout ke server gagal
       console.error('Gagal logout di server:', error);
