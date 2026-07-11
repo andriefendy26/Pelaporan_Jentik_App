@@ -142,7 +142,7 @@ export default function HomeScreen() {
         </View>
 
         {/* CTA Submit Laporan */}
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={styles.submitCta}
         onPress={() => router.push('/submit-laporan')}
         activeOpacity={0.85}
@@ -155,7 +155,7 @@ export default function HomeScreen() {
           <Text style={styles.submitCtaSubtitle}>Kirim laporan pemeriksaan jentik bulan ini</Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color={COLORS.cardBg} />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
         {loading ? (
           <ActivityIndicator size="large" color={COLORS.accent} style={styles.loadingIndicator} />
