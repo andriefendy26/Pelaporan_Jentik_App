@@ -15,6 +15,7 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 const tabs: { name: string; href: Href; icon: IoniconName; iconActive: IoniconName }[] = [
   { name: "Home", href: "/" as Href, icon: "home-outline", iconActive: "home" },
   { name: "Laporan", href: "/laporan" as Href, icon: "document-text-outline", iconActive: "document-text" },
+  { name: "Kasus", href: "/kasus" as Href, icon: "settings-outline", iconActive: "settings" },
   { name: "Setting", href: "/setting" as Href, icon: "settings-outline", iconActive: "settings" },
 ];
 

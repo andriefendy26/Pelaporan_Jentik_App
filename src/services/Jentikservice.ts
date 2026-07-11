@@ -1,5 +1,6 @@
 import { apiClient } from '../api/client';
 import { FormAbjPayload } from '../types/abj';
+import { KasusPayload } from '../types/kasus';
 
 export interface LoginPayload {
   username: string;
@@ -65,4 +66,12 @@ export const rekapService = {
   exportLaporanHasilPemeriksaanJentik: (params?: { bulan?: number; tahun?: number }) => apiClient.get('/rekap/laporan-hasil-pemeriksaan-jentik/export', { params, responseType: 'blob' }),
   getPendataanPerRt: (params?: { bulan?: number; tahun?: number; id_kelurahan?: number }) => apiClient.get('/rekap/pendataan-per-rt', { params }),
   exportPendataanPerRt: (params?: { bulan?: number; tahun?: number }) => apiClient.get('/rekap/pendataan-per-rt/export', { params, responseType: 'blob' }),
+};
+
+export const kasusService = {
+  getAll: (params?: { bulan?: number; tahun?: number }) => apiClient.get('/kasus', { params }),
+  create: (payload: KasusPayload) => apiClient.post('/kasus', payload),
+  getById: (id: number | string) => apiClient.get(`/kasus/${id}`),
+  update: (id: number | string, payload: KasusPayload) => apiClient.put(`/kasus/${id}`, payload),
+  delete: (id: number | string) => apiClient.delete(`/kasus/${id}`),
 };
