@@ -1,5 +1,6 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect,useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+
 import {
   ActivityIndicator,
   Dimensions,
@@ -9,6 +10,7 @@ import {
   StyleSheet,
   Text,
   View,
+  TouchableOpacity
 } from 'react-native';
 import { BarChart, LineChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
@@ -51,6 +53,7 @@ function getInitial(name?: string, username?: string) {
 
 export default function HomeScreen() {
   const { user, logout } = useAuth();
+  const router = useRouter();
 
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [rumahPerBulan, setRumahPerBulan] = useState<MonthlyRumah[]>([]);
@@ -137,6 +140,22 @@ export default function HomeScreen() {
             </Text>
           </View>
         </View>
+
+        {/* CTA Submit Laporan */}
+      <TouchableOpacity
+        style={styles.submitCta}
+        onPress={() => router.push('/submit-laporan')}
+        activeOpacity={0.85}
+      >
+        <View style={styles.submitCtaIconWrapper}>
+          <Ionicons name="paper-plane-outline" size={20} color={COLORS.cardBg} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.submitCtaTitle}>Submit Laporan Bulanan</Text>
+          <Text style={styles.submitCtaSubtitle}>Kirim laporan pemeriksaan jentik bulan ini</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={COLORS.cardBg} />
+      </TouchableOpacity>
 
         {loading ? (
           <ActivityIndicator size="large" color={COLORS.accent} style={styles.loadingIndicator} />
@@ -253,6 +272,26 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
+
+  submitCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: COLORS.accent,
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 24,
+  },
+  submitCtaIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitCtaTitle: { color: COLORS.cardBg, fontSize: 14.5, fontWeight: '700' },
+  submitCtaSubtitle: { color: 'rgba(255,255,255,0.85)', fontSize: 11.5, marginTop: 2 },
 
   heroCard: {
     flexDirection: 'row',
