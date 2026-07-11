@@ -23,11 +23,23 @@ export const authService = {
 };
 
 export const abjService = {
-  getAll: () => apiClient.get('/abj'),
+  getAll: (params?: { bulan?: number; tahun?: number }) => apiClient.get('/abj', { params }),
   create: (payload: FormAbjPayload) => apiClient.post('/abj', payload),
   getById: (id: number | string) => apiClient.get(`/abj/${id}`),
   update: (id: number | string, payload: FormAbjPayload) => apiClient.put(`/abj/${id}`, payload),
   delete: (id: number | string) => apiClient.delete(`/abj/${id}`),
+};
+
+export interface LaporanBulananStatus {
+  status: 'draft' | 'submitted' | 'belum_ada_data';
+  submitted_at: string | null;
+}
+
+export const laporanBulananService = {
+  submit: (payload: { bulan: number; tahun: number }) =>
+    apiClient.post('/laporan-bulanan/submit', payload),
+  getStatus: (params: { bulan: number; tahun: number }) =>
+    apiClient.get<{ status: string; submitted_at: string | null }>('/laporan-bulanan/status', { params }),
 };
 
 export const laporanService = {
