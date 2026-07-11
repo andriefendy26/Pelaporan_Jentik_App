@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
+  Linking,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -157,6 +158,33 @@ export default function HomeScreen() {
         <Ionicons name="chevron-forward" size={18} color={COLORS.cardBg} />
       </TouchableOpacity> */}
 
+      {/* CTA Buku Petunjuk & Informasi DBD */}
+      <View style={styles.infoCtaRow}>
+        <TouchableOpacity
+          style={styles.infoCtaCard}
+          onPress={() => Linking.openURL('https://contoh-link-buku-petunjuk.pdf')}
+          activeOpacity={0.85}
+        >
+          <View style={[styles.infoCtaIconWrapper, { backgroundColor: 'rgba(0, 173, 181, 0.12)' }]}>
+            <Ionicons name="book-outline" size={20} color={COLORS.accent} />
+          </View>
+          <Text style={styles.infoCtaTitle}>Buku Petunjuk</Text>
+          <Text style={styles.infoCtaSubtitle}>Panduan pemeriksaan jentik</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.infoCtaCard}
+          onPress={() => Linking.openURL('https://contoh-link-informasi-dbd.com')}
+          activeOpacity={0.85}
+        >
+          <View style={[styles.infoCtaIconWrapper, { backgroundColor: 'rgba(220, 38, 38, 0.1)' }]}>
+            <Ionicons name="medkit-outline" size={20} color={COLORS.danger} />
+          </View>
+          <Text style={styles.infoCtaTitle}>Informasi DBD</Text>
+          <Text style={styles.infoCtaSubtitle}>Kenali gejala & pencegahan</Text>
+        </TouchableOpacity>
+      </View>
+
         {loading ? (
           <ActivityIndicator size="large" color={COLORS.accent} style={styles.loadingIndicator} />
         ) : (
@@ -292,7 +320,32 @@ const styles = StyleSheet.create({
   },
   submitCtaTitle: { color: COLORS.cardBg, fontSize: 14.5, fontWeight: '700' },
   submitCtaSubtitle: { color: 'rgba(255,255,255,0.85)', fontSize: 11.5, marginTop: 2 },
-
+  infoCtaRow: {
+  flexDirection: 'row',
+  gap: 12,
+  marginBottom: 24,
+},
+infoCtaCard: {
+  flex: 1,
+  backgroundColor: COLORS.cardBg,
+  borderRadius: 16,
+  padding: 14,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.05,
+  shadowRadius: 6,
+  elevation: 1,
+},
+infoCtaIconWrapper: {
+  width: 34,
+  height: 34,
+  borderRadius: 17,
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginBottom: 8,
+},
+infoCtaTitle: { fontSize: 13, fontWeight: '700', color: COLORS.textDark },
+infoCtaSubtitle: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2 },
   heroCard: {
     flexDirection: 'row',
     alignItems: 'center',
