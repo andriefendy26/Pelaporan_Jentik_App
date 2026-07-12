@@ -146,6 +146,7 @@ const [noTelepon, setNoTelepon] = useState('');
     }
 
     const payload = {
+        
         id_kelurahan: user.id_kelurahan,
         id_rt: user.id_rt,
         nama_penderita: namaPenderita.trim(),

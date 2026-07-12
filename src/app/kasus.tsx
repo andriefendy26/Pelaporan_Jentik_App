@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect} from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +14,7 @@ import {
 import BottomNav from '../components/BottomNav';
 import { kasusService } from '../services/Jentikservice';
 import { Kasus } from '../types/kasus';
+import { useAuth } from '../services/Context/AuthContext';
 
 const COLORS = {
   bg: '#EEEEEE',
@@ -47,6 +48,11 @@ export default function KasusScreen() {
   const now = new Date();
   const [bulan, setBulan] = useState(now.getMonth() + 1);
   const [tahun, setTahun] = useState(now.getFullYear());
+  const { user } = useAuth();
+
+  useEffect(() => {
+    console.log(user);
+}, [])
 
   const [data, setData] = useState<Kasus[]>([]);
   const [loading, setLoading] = useState(true);
