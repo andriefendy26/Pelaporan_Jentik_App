@@ -257,7 +257,7 @@ export default function HomeScreen() {
               )}
             </View>
 
-            <View style={[styles.chartCard, { paddingBottom: 4 }]}>
+            {/* <View style={[styles.chartCard, { paddingBottom: 4 }]}>
               <View style={styles.chartCardHeader}>
                 <View style={styles.chartIconWrapper}>
                   <Ionicons name="location-outline" size={15} color={COLORS.accent} />
@@ -265,7 +265,7 @@ export default function HomeScreen() {
                 <Text style={styles.chartCardTitle}>ABJ per Kelurahan</Text>
               </View>
               <KelurahanAbjList data={abjPerKelurahan} />
-            </View>
+            </View> */}
           </>
         )}
       </ScrollView>
