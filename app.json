@@ -8,7 +8,8 @@
     "scheme": "pelaporanjentikapp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/images/icon.png"
+      "icon": "./assets/images/icon.png",
+      "bundleIdentifier": "com.andriefendy.Pelaporan-Jentik-App"
     },
     "android": {
       "adaptiveIcon": {
