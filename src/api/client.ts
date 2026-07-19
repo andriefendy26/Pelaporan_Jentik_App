@@ -5,8 +5,8 @@ import axios from 'axios';
 // - Emulator Android  -> gunakan http://10.0.2.2:8000/api
 // - Simulator iOS     -> gunakan http://127.0.0.1:8000/api atau http://localhost:8000/api
 // - HP fisik (Expo Go)-> gunakan IP LAN komputermu, misal http://192.168.1.10:8000/api
-export const API_URL = 'https://sijumantik.my.id/api';
-// export const API_URL = 'http://10.0.2.2:8000/api';
+// export const API_URL = 'https://sijumantik.my.id/api';
+export const API_URL = 'http://10.0.2.2:8000/api';
 
 export const apiClient = axios.create({
   baseURL: API_URL,
