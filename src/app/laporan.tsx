@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
-import { abjService, laporanBulananService, rekapService } from '../services/Jentikservice';
+import { abjService, laporanBulananService } from '../services/Jentikservice';
 import { downloadAndShareExcel } from '../services/downloadExcel';
 import { FormAbj } from '../types/abj';
 
@@ -223,23 +223,19 @@ export default function LaporanScreen() {
 
     Alert.alert(
       'Export Excel',
-      `Unduh laporan hasil pemeriksaan jentik ${BULAN_NAMA[bulan - 1]} ${tahun}?`,
+      'Unduh seluruh data ABJ untuk wilayah kamu?',
       [
         { text: 'Batal', style: 'cancel' },
         {
           text: 'Ya, Export',
           onPress: async () => {
             setExporting(true);
-            const params = { bulan, tahun };
             try {
-              const res = await rekapService.exportLaporanHasilPemeriksaanJentik(params);
-              const blob = new Blob([res.data], {
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-              });
-              await downloadAndShareExcel(
-                blob,
-                `laporan-hasil-pemeriksaan-jentik-${bulan}-${tahun}.xlsx`
-              );
+              const res = await abjService.export();
+              const contentDisposition = res.headers['content-disposition'];
+              const filenameMatch = contentDisposition?.match(/filename="?([^"]+)"?/);
+              const filename = filenameMatch?.[1] ?? `abj-${bulan}-${tahun}.xlsx`;
+              await downloadAndShareExcel(res.data as ArrayBuffer, filename);
             } catch (error: any) {
               Alert.alert(
                 'Gagal export',

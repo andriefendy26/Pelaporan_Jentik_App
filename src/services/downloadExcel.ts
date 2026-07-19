@@ -1,30 +1,20 @@
-import { File, Paths, EncodingType } from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Alert } from 'react-native';
 
 /**
- * Terima Blob hasil response axios (responseType: 'blob'), tulis ke file di
- * cache directory pakai API expo-file-system v18 (File + Paths), lalu buka
- * share sheet supaya user bisa simpan/kirim filenya.
+ * Terima ArrayBuffer hasil response axios (responseType: 'arraybuffer'), tulis
+ * langsung ke file di cache directory pakai API expo-file-system v18 (File + Paths),
+ * lalu buka share sheet supaya user bisa simpan/kirim filenya.
+ *
+ * Catatan: XMLHttpRequest di React Native TIDAK mendukung responseType 'blob',
+ * jadi kita pakai 'arraybuffer' dan tulis sebagai Uint8Array (bukan base64).
  */
-export async function downloadAndShareExcel(blob: Blob, filename: string) {
+export async function downloadAndShareExcel(data: ArrayBuffer, filename: string) {
   try {
-    const base64Data: string = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        // buang prefix "data:...;base64,"
-        resolve(result.split(',')[1]);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-
     const file = new File(Paths.cache, filename);
 
-    file.write(base64Data, {
-      encoding: EncodingType.Base64,
-    });
+    file.write(new Uint8Array(data));
 
     const canShare = await Sharing.isAvailableAsync();
     if (canShare) {

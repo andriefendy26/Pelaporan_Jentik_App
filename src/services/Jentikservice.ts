@@ -29,6 +29,7 @@ export const abjService = {
   getById: (id: number | string) => apiClient.get(`/abj/${id}`),
   update: (id: number | string, payload: FormAbjPayload) => apiClient.put(`/abj/${id}`, payload),
   delete: (id: number | string) => apiClient.delete(`/abj/${id}`),
+  export: () => apiClient.get('/abj/export', { responseType: 'arraybuffer' }),
 };
 
 export interface LaporanBulananStatus {
