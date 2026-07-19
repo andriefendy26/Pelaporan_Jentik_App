@@ -17,7 +17,8 @@ import {
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
-import { abjService, laporanBulananService } from '../services/Jentikservice';
+import { abjService, laporanBulananService, rekapService } from '../services/Jentikservice';
+import { downloadAndShareExcel } from '../services/downloadExcel';
 import { FormAbj } from '../types/abj';
 
 const COLORS = {
@@ -82,6 +83,7 @@ export default function LaporanScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const [pendingItems, setPendingItems] = useState<PendingLaporan[]>([]);
   const [syncing, setSyncing] = useState(false);
@@ -212,6 +214,46 @@ export default function LaporanScreen() {
     }
   };
 
+  const handleExport = async () => {
+    if (exporting) return;
+    if (!isOnline) {
+      Alert.alert('Tidak ada koneksi', 'Export Excel membutuhkan koneksi internet.');
+      return;
+    }
+
+    Alert.alert(
+      'Export Excel',
+      `Unduh laporan hasil pemeriksaan jentik ${BULAN_NAMA[bulan - 1]} ${tahun}?`,
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Ya, Export',
+          onPress: async () => {
+            setExporting(true);
+            const params = { bulan, tahun };
+            try {
+              const res = await rekapService.exportLaporanHasilPemeriksaanJentik(params);
+              const blob = new Blob([res.data], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              });
+              await downloadAndShareExcel(
+                blob,
+                `laporan-hasil-pemeriksaan-jentik-${bulan}-${tahun}.xlsx`
+              );
+            } catch (error: any) {
+              Alert.alert(
+                'Gagal export',
+                error?.response?.data?.message ?? 'Tidak bisa mengunduh file Excel.'
+              );
+            } finally {
+              setExporting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const statusInfo = (() => {
     if (status === 'submitted' && submittedAt) {
       const tepatWaktu = new Date(submittedAt) <= batasWaktu(bulan, tahun);
@@ -267,6 +309,21 @@ export default function LaporanScreen() {
           >
             <Ionicons name="add" size={18} color={COLORS.cardBg} />
             <Text style={styles.addButtonText}>Tambah</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.exportButton, exporting && styles.exportButtonDisabled]}
+            onPress={handleExport}
+            disabled={exporting}
+            activeOpacity={0.85}
+          >
+            {exporting ? (
+              <ActivityIndicator size={14} color={COLORS.accent} />
+            ) : (
+              <Ionicons name="download-outline" size={16} color={COLORS.accent} />
+            )}
+            <Text style={styles.exportButtonText}>
+              {exporting ? 'Export...' : 'Export Excel'}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -471,6 +528,19 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   addButtonText: { color: COLORS.cardBg, fontWeight: '700', fontSize: 13 },
+  exportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.cardBg,
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 5,
+  },
+  exportButtonDisabled: { opacity: 0.5 },
+  exportButtonText: { color: COLORS.accent, fontWeight: '700', fontSize: 13 },
 
   periodRow: {
     flexDirection: 'row',
