@@ -513,7 +513,9 @@ export default function LaporanScreen() {
             <ActivityIndicator color={COLORS.cardBg} />
           ) : (
             <>
-              <Ionicons name="paper-plane-outline" size={18} color={COLORS.cardBg} />
+              <View style={styles.submitIconWrapper}>
+                <Ionicons name="send" size={15} color={COLORS.cardBg} />
+              </View>
               <Text style={styles.submitText}>
                 {status === 'submitted' ? 'Submit Ulang Laporan' : 'Submit Laporan'}
               </Text>
@@ -888,10 +890,23 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     flexDirection: 'row',
-    gap: 8,
-    backgroundColor: COLORS.accent,
+    gap: 10,
+    backgroundColor: COLORS.textDark,
     borderRadius: 14,
     paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  submitIconWrapper: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
