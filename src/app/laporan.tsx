@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -15,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { ItemAbj } from '../types/abj';
 import BottomNav from '../components/BottomNav';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { abjService, laporanBulananService } from '../services/Jentikservice';
@@ -79,6 +81,7 @@ export default function LaporanScreen() {
   const [status, setStatus] = useState<string>('belum_ada_data');
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [viewItem, setViewItem] = useState<FormAbj | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -450,6 +453,13 @@ export default function LaporanScreen() {
                     <View style={styles.itemActionsRow}>
                       <TouchableOpacity
                         style={styles.itemActionButton}
+                        onPress={() => setViewItem(item)}
+                      >
+                        <Ionicons name="eye-outline" size={15} color={COLORS.textDark} />
+                        <Text style={styles.itemActionTextNeutral}>Lihat</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.itemActionButton}
                         onPress={() => router.push(`/laporan-form?id=${item.id}`)}
                       >
                         <Ionicons name="create-outline" size={15} color={COLORS.accent} />
@@ -498,6 +508,78 @@ export default function LaporanScreen() {
       </View>
 
       <BottomNav />
+
+      {/* Modal lihat daftar items ABJ */}
+      <Modal
+        visible={!!viewItem}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setViewItem(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle}>Detail Pemeriksaan</Text>
+                {viewItem && (
+                  <Text style={styles.modalSubtitle}>
+                    {formatTanggal(viewItem.tanggal_pemeriksaan)} ·{' '}
+                    {viewItem.items_abj?.length ?? 0} rumah
+                  </Text>
+                )}
+              </View>
+              <TouchableOpacity
+                onPress={() => setViewItem(null)}
+                hitSlop={8}
+                style={styles.modalClose}
+              >
+                <Ionicons name="close" size={22} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalTableHeader}>
+              <Text style={[styles.modalCellName, styles.modalHeaderText]}>Nama Kepala Keluarga</Text>
+              <Text style={[styles.modalCellNum, styles.modalHeaderText, styles.modalCenter]}>Berjentik</Text>
+              <Text style={[styles.modalCellNum, styles.modalHeaderText, styles.modalCenter]}>Tdk</Text>
+            </View>
+
+            <ScrollView style={styles.modalScroll} keyboardShouldPersistTaps="handled">
+              {viewItem && (viewItem.items_abj?.length ?? 0) === 0 ? (
+                <View style={styles.modalEmpty}>
+                  <Text style={styles.modalEmptyText}>Tidak ada data rumah pada sesi ini.</Text>
+                </View>
+              ) : (
+                viewItem?.items_abj?.map((rumah: ItemAbj, idx: number) => (
+                  <View
+                    key={idx}
+                    style={[styles.modalRow, idx % 2 === 1 && styles.modalRowAlt]}
+                  >
+                    <Text style={[styles.modalCellName, styles.modalCellText]} numberOfLines={2}>
+                      {rumah.nama_kepala_keluarga || '-'}
+                    </Text>
+                    <Text style={[styles.modalCellNum, styles.modalCenter]}>
+                      {rumah.penampungan_berjentik || '0'}
+                    </Text>
+                    <Text style={[styles.modalCellNum, styles.modalCenter]}>
+                      {rumah.penampungan_tidak_berjentik || '0'}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setViewItem(null)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalCloseButtonText}>Tutup</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -713,6 +795,78 @@ const styles = StyleSheet.create({
   },
   itemActionTextAccent: { fontSize: 12.5, fontWeight: '700', color: COLORS.accent },
   itemActionTextDanger: { fontSize: 12.5, fontWeight: '700', color: COLORS.danger },
+  itemActionTextNeutral: { fontSize: 12.5, fontWeight: '700', color: COLORS.textSecondary },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: COLORS.cardBg,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '85%',
+    paddingBottom: 12,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  modalTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textDark },
+  modalSubtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  modalClose: { padding: 4 },
+  modalTableHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.accent,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  modalHeaderText: { color: COLORS.cardBg, fontWeight: '700', fontSize: 11.5 },
+  modalScroll: { maxHeight: 420 },
+  modalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  modalRowAlt: { backgroundColor: COLORS.accentSoft },
+  modalCellName: {
+    flex: 1,
+    fontSize: 13,
+    color: COLORS.textDark,
+    paddingRight: 8,
+  },
+  modalCellNum: {
+    width: 64,
+    fontSize: 13,
+    color: COLORS.textDark,
+  },
+  modalCenter: { textAlign: 'center' },
+  modalCellText: { fontWeight: '600' },
+  modalEmpty: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 30,
+  },
+  modalEmptyText: { color: COLORS.textSecondary, fontSize: 12.5, textAlign: 'center' },
+  modalFooter: { paddingHorizontal: 18, paddingTop: 12 },
+  modalCloseButton: {
+    backgroundColor: COLORS.accent,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCloseButtonText: { color: COLORS.cardBg, fontWeight: '700', fontSize: 14 },
 
   footer: {
     padding: 16,
