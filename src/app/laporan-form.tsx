@@ -21,7 +21,7 @@ import {
 import ItemsAbjTable from '../components/ItemsAbjTable';
 import { abjService } from '../services/Jentikservice';
 import { useAuth } from '../services/Context/AuthContext';
-import { ItemAbj } from '../types/abj';
+import { FormAbj, ItemAbj } from '../types/abj';
 
 const COLORS = {
   bg: '#EEEEEE',
@@ -167,6 +167,33 @@ export default function LaporanFormScreen() {
           [{ text: 'OK', onPress: () => router.back() }]
         );
         return;
+      }
+
+      if (!isEdit) {
+        const existing = await abjService.getAll({
+          bulan: tanggalPemeriksaan.getMonth() + 1,
+          tahun: tanggalPemeriksaan.getFullYear(),
+        });
+        const match = (existing?.data?.data ?? []).find(
+          (f: FormAbj) => f.tanggal_pemeriksaan === toApiDateString(tanggalPemeriksaan)
+        );
+        if (match) {
+          const existingDetail = await abjService.getById(match.id);
+          const existingItems = existingDetail?.data?.data?.items_abj ?? [];
+          const mergedItems = [...existingItems, ...items];
+          const mergedPayload = {
+            id_kelurahan: user.id_kelurahan,
+            id_rt: user.id_rt,
+            tanggal_pemeriksaan: toApiDateString(tanggalPemeriksaan),
+            ItemsABJ: mergedItems,
+          };
+          await abjService.update(String(match.id), mergedPayload);
+          syncPendingLaporan();
+          Alert.alert('Berhasil', 'Data berhasil ditambahkan ke form yang sudah ada.', [
+            { text: 'OK', onPress: () => router.back() },
+          ]);
+          return;
+        }
       }
 
       if (isEdit) {
