@@ -80,7 +80,6 @@ export default function LaporanScreen() {
   const [items, setItems] = useState<FormAbj[]>([]);
   const [status, setStatus] = useState<string>('belum_ada_data');
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [viewItem, setViewItem] = useState<FormAbj | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -96,9 +95,6 @@ export default function LaporanScreen() {
   const isFuturePeriod =
     tahun > now.getFullYear() || (tahun === now.getFullYear() && bulan > now.getMonth() + 1);
 
-  const toggleExpand = (id: number) => {
-    setExpandedId((prev) => (prev === id ? null : id));
-  };
 
   const loadPending = async () => {
     const s = await getSyncStatus();
@@ -397,19 +393,15 @@ export default function LaporanScreen() {
               <Text style={styles.emptyButtonText}>Tambah Laporan Sekarang</Text>
             </TouchableOpacity>
           </View>
-        ) : (
+        ) : 
+        (
           items.map((item) => {
-            const isExpanded = expandedId === item.id;
             const jumlahBerjentik =
             item.items_abj?.filter((i) => isBerjentik(i.penampungan_berjentik)).length ?? 0;
 
             return (
               <View key={item.id} style={styles.itemCard}>
-                <TouchableOpacity
-                  style={styles.itemCardHeader}
-                  onPress={() => toggleExpand(item.id)}
-                  activeOpacity={0.7}
-                >
+                <View style={styles.itemCardHeader}>
                   <View style={styles.itemIconWrapper}>
                     <Ionicons name="calendar-outline" size={18} color={COLORS.accent} />
                   </View>
@@ -420,65 +412,88 @@ export default function LaporanScreen() {
                       {jumlahBerjentik > 0 ? ` · ${jumlahBerjentik} berjentik` : ''}
                     </Text>
                   </View>
-                  <Ionicons
-                    name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                    size={18}
-                    color={COLORS.textSecondary}
-                  />
-                </TouchableOpacity>
+                </View>
 
-                {isExpanded ? (
-                  <View style={styles.itemDetailWrapper}>
-                    {(item.items_abj ?? []).length === 0 ? (
-                      <Text style={styles.itemDetailEmpty}>Tidak ada data rumah pada sesi ini.</Text>
-                    ) : (
-                      (item.items_abj ?? []).map((rumah, idx) => (
-                        <View key={idx} style={styles.rumahRow}>
-                          <Text style={styles.rumahName} numberOfLines={1}>
-                            {rumah.nama_kepala_keluarga}
-                          </Text>
-                          {isBerjentik(rumah.penampungan_berjentik) ? (
-                            <View style={styles.rumahBadgeDanger}>
-                              <Text style={styles.rumahBadgeDangerText}>Berjentik</Text>
-                            </View>
-                          ) : (
-                            <View style={styles.rumahBadgeSuccess}>
-                              <Text style={styles.rumahBadgeSuccessText}>Bebas Jentik</Text>
-                            </View>
-                          )}
-                        </View>
-                      ))
-                    )}
+                <View style={styles.itemDetailWrapper}>
+                  <View style={styles.itemActionsRow}>
 
-                    <View style={styles.itemActionsRow}>
-                      <TouchableOpacity
-                        style={styles.itemActionButton}
-                        onPress={() => setViewItem(item)}
-                      >
-                        <Ionicons name="eye-outline" size={15} color={COLORS.textDark} />
-                        <Text style={styles.itemActionTextNeutral}>Lihat</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.itemActionButton}
-                        onPress={() => router.push(`/laporan-form?id=${item.id}`)}
-                      >
-                        <Ionicons name="create-outline" size={15} color={COLORS.accent} />
-                        <Text style={styles.itemActionTextAccent}>Edit</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.itemActionButton}
-                        onPress={() => handleDelete(item)}
-                      >
-                        <Ionicons name="trash-outline" size={15} color={COLORS.danger} />
-                        <Text style={styles.itemActionTextDanger}>Hapus</Text>
-                      </TouchableOpacity>
-                    </View>
+                    <TouchableOpacity
+                      style={styles.itemActionButton}
+                      onPress={() => setViewItem(item)}
+                    >
+                      <Ionicons name="eye-outline" size={15} color={COLORS.textDark} />
+                      <Text style={styles.itemActionTextNeutral}>Lihat</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.itemActionButton}
+                      onPress={() => router.push(`/laporan-form?id=${item.id}`)}
+                    >
+                      <Ionicons name="create-outline" size={15} color={COLORS.accent} />
+                      <Text style={styles.itemActionTextAccent}>Edit</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.itemActionButton}
+                      onPress={() => handleDelete(item)}
+                    >
+                      <Ionicons name="trash-outline" size={15} color={COLORS.danger} />
+                      <Text style={styles.itemActionTextDanger}>Hapus</Text>
+                    </TouchableOpacity>
+
                   </View>
-                ) : null}
+                </View>
+                {/* <View style={styles.itemDetailWrapper}>
+                  {(item.items_abj ?? []).length === 0 ? (
+                    <Text style={styles.itemDetailEmpty}>Tidak ada data rumah pada sesi ini.</Text>
+                  ) : (
+                    (item.items_abj ?? []).map((rumah, idx) => (
+                      <View key={idx} style={styles.rumahRow}>
+                        <Text style={styles.rumahName} numberOfLines={1}>
+                          {rumah.nama_kepala_keluarga}
+                        </Text>
+                        {isBerjentik(rumah.penampungan_berjentik) ? (
+                          <View style={styles.rumahBadgeDanger}>
+                            <Text style={styles.rumahBadgeDangerText}>Berjentik</Text>
+                          </View>
+                        ) : (
+                          <View style={styles.rumahBadgeSuccess}>
+                            <Text style={styles.rumahBadgeSuccessText}>Bebas Jentik</Text>
+                          </View>
+                        )}
+                      </View>
+                    ))
+                  )}
+
+                  <View style={styles.itemActionsRow}>
+                    <TouchableOpacity
+                      style={styles.itemActionButton}
+                      onPress={() => setViewItem(item)}
+                    >
+                      <Ionicons name="eye-outline" size={15} color={COLORS.textDark} />
+                      <Text style={styles.itemActionTextNeutral}>Lihat</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.itemActionButton}
+                      onPress={() => router.push(`/laporan-form?id=${item.id}`)}
+                    >
+                      <Ionicons name="create-outline" size={15} color={COLORS.accent} />
+                      <Text style={styles.itemActionTextAccent}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.itemActionButton}
+                      onPress={() => handleDelete(item)}
+                    >
+                      <Ionicons name="trash-outline" size={15} color={COLORS.danger} />
+                      <Text style={styles.itemActionTextDanger}>Hapus</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View> */}
               </View>
             );
           })
-        )}
+        )
+        }
 
         <View style={{ height: 12 }} />
       </ScrollView>
@@ -743,14 +758,12 @@ const styles = StyleSheet.create({
   itemDetailWrapper: {
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
   },
-  itemDetailEmpty: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    paddingVertical: 6,
-  },
+  // itemDetailEmpty: {
+  //   fontSize: 12,
+  //   color: COLORS.textSecondary,
+  //   paddingVertical: 6,
+  // },
   rumahRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -783,10 +796,8 @@ const styles = StyleSheet.create({
   itemActionsRow: {
     flexDirection: 'row',
     gap: 16,
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   itemActionButton: {
     flexDirection: 'row',
