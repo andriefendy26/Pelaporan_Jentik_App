@@ -15,6 +15,8 @@ export interface FormAbj {
   created_at?: string;
   updated_at?: string;
   items_abj?: ItemAbj[];
+  kelurahan?: { id: number; name: string };
+  rt?: { id: number; name: string };
 }
 
 export interface FormAbjPayload {
