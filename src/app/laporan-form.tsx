@@ -18,7 +18,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import ItemsAbjRepeater from '../components/ItemsAbjRepeater';
+import ItemsAbjTable from '../components/ItemsAbjTable';
 import { abjService } from '../services/Jentikservice';
 import { useAuth } from '../services/Context/AuthContext';
 import { ItemAbj } from '../types/abj';
@@ -295,9 +295,7 @@ export default function LaporanFormScreen() {
             </View>
           ) : null}
         </View>
-        <View style={styles.repeaterCard}>
-          <ItemsAbjRepeater items={items} onChange={setItems} />
-        </View>
+        <ItemsAbjTable items={items} onChange={setItems} />
 
         <View style={{ height: 8 }} />
       </ScrollView>
