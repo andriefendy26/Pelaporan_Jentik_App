@@ -462,34 +462,42 @@ export default function LaporanScreen() {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={styles.itemActionButton}
+                      style={[styles.itemActionButton, item.status === 'dilaporkan' && styles.itemActionButtonDisabled]}
                       onPress={() => handleSingleSubmit(item.id)}
-                      disabled={submittingSingleId !== null}
+                      disabled={submittingSingleId !== null || item.status === 'dilaporkan'}
                     >
                       {submittingSingleId === item.id ? (
                         <ActivityIndicator size={12} color={COLORS.success} />
                       ) : (
                         <>
-                          <Ionicons name="send-outline" size={15} color={COLORS.success} />
-                          <Text style={styles.itemActionTextSuccess}>Submit</Text>
+                          <Ionicons name="send-outline" size={15} color={item.status === 'dilaporkan' ? '#9aa0a6' : COLORS.success} />
+                          <Text style={[styles.itemActionTextSuccess, item.status === 'dilaporkan' && { color: '#9aa0a6' }]}>
+                            {item.status === 'dilaporkan' ? 'Tersubmit' : 'Submit'}
+                          </Text>
                         </>
                       )}
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={styles.itemActionButton}
+                      style={[styles.itemActionButton, item.status === 'dilaporkan' && styles.itemActionButtonDisabled]}
                       onPress={() => router.push(`/laporan-form?id=${item.id}`)}
+                      disabled={item.status === 'dilaporkan'}
                     >
-                      <Ionicons name="create-outline" size={15} color={COLORS.accent} />
-                      <Text style={styles.itemActionTextAccent}>Edit</Text>
+                      <Ionicons name="create-outline" size={15} color={item.status === 'dilaporkan' ? '#9aa0a6' : COLORS.accent} />
+                      <Text style={[styles.itemActionTextAccent, item.status === 'dilaporkan' && { color: '#9aa0a6' }]}>
+                        {item.status === 'dilaporkan' ? 'Tersubmit' : 'Edit'}
+                      </Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={styles.itemActionButton}
+                      style={[styles.itemActionButton, item.status === 'dilaporkan' && styles.itemActionButtonDisabled]}
                       onPress={() => handleDelete(item)}
+                      disabled={item.status === 'dilaporkan'}
                     >
-                      <Ionicons name="trash-outline" size={15} color={COLORS.danger} />
-                      <Text style={styles.itemActionTextDanger}>Hapus</Text>
+                      <Ionicons name="trash-outline" size={15} color={item.status === 'dilaporkan' ? '#9aa0a6' : COLORS.danger} />
+                      <Text style={[styles.itemActionTextDanger, item.status === 'dilaporkan' && { color: '#9aa0a6' }]}>
+                        {item.status === 'dilaporkan' ? 'Tersubmit' : 'Hapus'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -784,6 +792,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
   },
+  itemActionButtonDisabled: { opacity: 0.4 },
   itemActionTextAccent: { fontSize: 12.5, fontWeight: '700', color: COLORS.accent },
   itemActionTextDanger: { fontSize: 12.5, fontWeight: '700', color: COLORS.danger },
   itemActionTextNeutral: { fontSize: 12.5, fontWeight: '700', color: COLORS.textSecondary },

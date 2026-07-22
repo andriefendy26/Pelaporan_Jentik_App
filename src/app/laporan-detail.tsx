@@ -155,25 +155,30 @@ export default function LaporanDetailScreen() {
             <Text style={styles.subtitle}>{formatTanggal(data.tanggal_pemeriksaan)}</Text>
           </View>
           <TouchableOpacity
-            style={styles.editButton}
+            style={[styles.editButton, data.status === 'dilaporkan' && styles.editButtonDisabled]}
             onPress={() => router.push(`/laporan-form?id=${data.id}`)}
+            disabled={data.status === 'dilaporkan'}
             activeOpacity={0.85}
           >
-            <Ionicons name="create-outline" size={16} color={COLORS.cardBg} />
-            <Text style={styles.editButtonText}>Edit</Text>
+            <Ionicons name="create-outline" size={16} color={data.status === 'dilaporkan' ? 'rgba(255,255,255,0.6)' : COLORS.cardBg} />
+            <Text style={[styles.editButtonText, data.status === 'dilaporkan' && { color: 'rgba(255,255,255,0.8)' }]}>
+              {data.status === 'dilaporkan' ? 'Tersubmit' : 'Edit'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.editButton, { backgroundColor: COLORS.success }]}
+            style={[styles.editButton, { backgroundColor: COLORS.success }, data.status === 'dilaporkan' && styles.editButtonDisabled]}
             onPress={() => handleSingleSubmit(data.id)}
-            disabled={submitting}
+            disabled={submitting || data.status === 'dilaporkan'}
             activeOpacity={0.85}
           >
             {submitting ? (
               <ActivityIndicator size={14} color={COLORS.cardBg} />
             ) : (
               <>
-                <Ionicons name="send-outline" size={16} color={COLORS.cardBg} />
-                <Text style={styles.editButtonText}>Submit</Text>
+                <Ionicons name="send-outline" size={16} color={data.status === 'dilaporkan' ? 'rgba(255,255,255,0.6)' : COLORS.cardBg} />
+                <Text style={[styles.editButtonText, data.status === 'dilaporkan' && { color: 'rgba(255,255,255,0.8)' }]}>
+                  {data.status === 'dilaporkan' ? 'Tersubmit' : 'Submit'}
+                </Text>
               </>
             )}
           </TouchableOpacity>
@@ -308,6 +313,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   editButtonText: { color: COLORS.cardBg, fontWeight: '700', fontSize: 13 },
+  editButtonDisabled: { opacity: 0.6 },
 
   infoCard: {
     backgroundColor: COLORS.cardBg,
