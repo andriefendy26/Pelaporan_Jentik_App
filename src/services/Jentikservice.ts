@@ -30,6 +30,8 @@ export const abjService = {
   update: (id: number | string, payload: FormAbjPayload) => apiClient.put(`/abj/${id}`, payload),
   delete: (id: number | string) => apiClient.delete(`/abj/${id}`),
   export: () => apiClient.get('/abj/export', { responseType: 'arraybuffer' }),
+  submitSingle: (id: number | string) => apiClient.post(`/abj/${id}/submit-report`),
+  submitReport: (payload: { form_abj_ids: number[] }) => apiClient.post('/abj/submit-report', payload),
 };
 
 export interface LaporanBulananStatus {

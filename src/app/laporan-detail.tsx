@@ -54,6 +54,7 @@ export default function LaporanDetailScreen() {
   const [data, setData] = useState<FormAbj | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const loadData = async () => {
     if (!id) return;
@@ -79,6 +80,33 @@ export default function LaporanDetailScreen() {
   const handleRefresh = () => {
     setRefreshing(true);
     loadData();
+  };
+
+  const handleSingleSubmit = async (formId: number) => {
+    if (submitting) return;
+    Alert.alert(
+      'Submit Form',
+      'Submit form ini ke puskesmas?',
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Ya, Submit',
+          onPress: async () => {
+            setSubmitting(true);
+            try {
+              const res = await abjService.submitSingle(formId);
+              Alert.alert('Berhasil', res?.data?.message ?? 'Form berhasil disubmit');
+              await loadData();
+            } catch (error: any) {
+              const message = error?.response?.data?.message ?? 'Gagal submit form, coba lagi.';
+              Alert.alert('Gagal', message);
+            } finally {
+              setSubmitting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const totalRumah = data?.items_abj?.length ?? 0;
@@ -133,6 +161,21 @@ export default function LaporanDetailScreen() {
           >
             <Ionicons name="create-outline" size={16} color={COLORS.cardBg} />
             <Text style={styles.editButtonText}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.editButton, { backgroundColor: COLORS.success }]}
+            onPress={() => handleSingleSubmit(data.id)}
+            disabled={submitting}
+            activeOpacity={0.85}
+          >
+            {submitting ? (
+              <ActivityIndicator size={14} color={COLORS.cardBg} />
+            ) : (
+              <>
+                <Ionicons name="send-outline" size={16} color={COLORS.cardBg} />
+                <Text style={styles.editButtonText}>Submit</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
 

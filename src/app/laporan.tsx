@@ -83,6 +83,7 @@ export default function LaporanScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [submittingSingleId, setSubmittingSingleId] = useState<number | null>(null);
 
   const [pendingItems, setPendingItems] = useState<PendingLaporan[]>([]);
   const [syncing, setSyncing] = useState(false);
@@ -199,7 +200,13 @@ export default function LaporanScreen() {
   const doSubmit = async () => {
     setSubmitting(true);
     try {
-      const res = await laporanBulananService.submit({ bulan, tahun });
+      const formIds = items.map((i) => i.id).filter(Boolean);
+      if (formIds.length === 0) {
+        Alert.alert('Validasi', 'Tidak ada form yang bisa disubmit.');
+        setSubmitting(false);
+        return;
+      }
+      const res = await abjService.submitReport({ form_abj_ids: formIds });
       Alert.alert('Berhasil', res?.data?.message ?? 'Laporan berhasil disubmit');
       await loadData();
     } catch (error: any) {
@@ -208,6 +215,38 @@ export default function LaporanScreen() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleSingleSubmit = async (formId: number) => {
+    if (submittingSingleId !== null) return;
+    if (!isOnline) {
+      Alert.alert('Tidak ada koneksi', 'Submit membutuhkan koneksi internet.');
+      return;
+    }
+
+    Alert.alert(
+      'Submit Form',
+      'Submit form ini ke puskesmas?',
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Ya, Submit',
+          onPress: async () => {
+            setSubmittingSingleId(formId);
+            try {
+              const res = await abjService.submitSingle(formId);
+              Alert.alert('Berhasil', res?.data?.message ?? 'Form berhasil disubmit');
+              await loadData();
+            } catch (error: any) {
+              const message = error?.response?.data?.message ?? 'Gagal submit form, coba lagi.';
+              Alert.alert('Gagal', message);
+            } finally {
+              setSubmittingSingleId(null);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleExport = async () => {
@@ -424,6 +463,21 @@ export default function LaporanScreen() {
 
                     <TouchableOpacity
                       style={styles.itemActionButton}
+                      onPress={() => handleSingleSubmit(item.id)}
+                      disabled={submittingSingleId !== null}
+                    >
+                      {submittingSingleId === item.id ? (
+                        <ActivityIndicator size={12} color={COLORS.success} />
+                      ) : (
+                        <>
+                          <Ionicons name="send-outline" size={15} color={COLORS.success} />
+                          <Text style={styles.itemActionTextSuccess}>Submit</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.itemActionButton}
                       onPress={() => router.push(`/laporan-form?id=${item.id}`)}
                     >
                       <Ionicons name="create-outline" size={15} color={COLORS.accent} />
@@ -437,7 +491,6 @@ export default function LaporanScreen() {
                       <Ionicons name="trash-outline" size={15} color={COLORS.danger} />
                       <Text style={styles.itemActionTextDanger}>Hapus</Text>
                     </TouchableOpacity>
-
                   </View>
                 </View>
                 {/* <View style={styles.itemDetailWrapper}>
@@ -734,6 +787,7 @@ const styles = StyleSheet.create({
   itemActionTextAccent: { fontSize: 12.5, fontWeight: '700', color: COLORS.accent },
   itemActionTextDanger: { fontSize: 12.5, fontWeight: '700', color: COLORS.danger },
   itemActionTextNeutral: { fontSize: 12.5, fontWeight: '700', color: COLORS.textSecondary },
+  itemActionTextSuccess: { fontSize: 12.5, fontWeight: '700', color: COLORS.success },
 
 
 
