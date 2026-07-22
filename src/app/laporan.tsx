@@ -286,14 +286,15 @@ export default function LaporanScreen() {
   };
 
   const statusInfo = (() => {
-    if (status === 'submitted' && submittedAt) {
-      const tepatWaktu = new Date(submittedAt) <= batasWaktu(bulan, tahun);
+    const submittedCount = items.filter((i) => i.status === 'dilaporkan').length;
+
+    if (submittedCount > 0) {
       return {
         icon: 'checkmark-circle' as const,
         color: COLORS.success,
         bg: COLORS.successSoft,
-        title: 'Sudah Disubmit',
-        subtitle: `${formatTanggalWaktu(submittedAt)} · ${tepatWaktu ? 'Tepat waktu' : 'Terlambat'}`,
+        title: `${submittedCount} form disubmit`,
+        subtitle: `${formatTanggalWaktu(submittedAt!)} · ${status === 'submitted' ? 'Tepat waktu' : 'Terlambat'}`,
       };
     }
     if (items.length === 0) {
