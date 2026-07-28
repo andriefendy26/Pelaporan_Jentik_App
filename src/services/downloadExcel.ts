@@ -4,7 +4,7 @@ import { Alert } from 'react-native';
 
 /**
  * Terima ArrayBuffer hasil response axios (responseType: 'arraybuffer'), tulis
- * langsung ke file di cache directory pakai API expo-file-system v18 (File + Paths),
+ * ke direktori dokumen agar file bisa diakses melalui file manager,
  * lalu buka share sheet supaya user bisa simpan/kirim filenya.
  *
  * Catatan: XMLHttpRequest di React Native TIDAK mendukung responseType 'blob',
@@ -12,7 +12,7 @@ import { Alert } from 'react-native';
  */
 export async function downloadAndShareExcel(data: ArrayBuffer, filename: string) {
   try {
-    const file = new File(Paths.cache, filename);
+    const file = new File(Paths.document, filename);
 
     file.write(new Uint8Array(data));
 

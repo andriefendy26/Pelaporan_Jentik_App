@@ -8,6 +8,8 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
+  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -42,6 +44,8 @@ const BULAN_NAMA = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
 ];
+
+const JUMLAH_TAHUN_KE_BELAKANG = 4; // rentang tahun yang bisa dipilih (termasuk tahun berjalan)
 
 function batasWaktu(bulan: number, tahun: number) {
   return new Date(tahun, bulan, 5, 23, 59, 59);
@@ -89,10 +93,14 @@ export default function LaporanScreen() {
   const [syncing, setSyncing] = useState(false);
   const [needsReauth, setNeedsReauth] = useState(false);
 
+  const [bulanModalVisible, setBulanModalVisible] = useState(false);
+  const [tahunModalVisible, setTahunModalVisible] = useState(false);
+
   const totalRumah = items.reduce((sum, f) => sum + (f.items_abj?.length ?? 0), 0);
   const isFuturePeriod =
     tahun > now.getFullYear() || (tahun === now.getFullYear() && bulan > now.getMonth() + 1);
 
+  const daftarTahun = Array.from({ length: JUMLAH_TAHUN_KE_BELAKANG }, (_, i) => now.getFullYear() - i);
 
   const loadPending = async () => {
     const s = await getSyncStatus();
@@ -148,13 +156,21 @@ export default function LaporanScreen() {
     loadData();
   };
 
-  const gantiBulan = (delta: number) => {
-    let b = bulan + delta;
-    let t = tahun;
-    if (b > 12) { b = 1; t += 1; }
-    if (b < 1) { b = 12; t -= 1; }
+  const pilihBulan = (b: number) => {
+    const melewatiMasaDepan = tahun === now.getFullYear() && b > now.getMonth() + 1;
+    if (melewatiMasaDepan) return;
     setBulan(b);
+    setBulanModalVisible(false);
+  };
+
+  const pilihTahun = (t: number) => {
+    if (t > now.getFullYear()) return;
     setTahun(t);
+    // kalau tahun berjalan dipilih dan bulan yang sedang aktif ada di masa depan, sesuaikan ke bulan berjalan
+    if (t === now.getFullYear() && bulan > now.getMonth() + 1) {
+      setBulan(now.getMonth() + 1);
+    }
+    setTahunModalVisible(false);
   };
 
   const handleDelete = (item: FormAbj) => {
@@ -359,19 +375,24 @@ export default function LaporanScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Periode selector */}
+        {/* Filter periode: select bulan & tahun */}
         <View style={styles.periodRow}>
-          <TouchableOpacity style={styles.periodArrow} onPress={() => gantiBulan(-1)} hitSlop={8}>
-            <Ionicons name="chevron-back" size={18} color={COLORS.textDark} />
-          </TouchableOpacity>
-          <Text style={styles.periodText}>{BULAN_NAMA[bulan - 1]} {tahun}</Text>
           <TouchableOpacity
-            style={[styles.periodArrow, isFuturePeriod && styles.periodArrowDisabled]}
-            onPress={() => !isFuturePeriod && gantiBulan(1)}
-            disabled={isFuturePeriod}
-            hitSlop={8}
+            style={styles.periodSelect}
+            onPress={() => setBulanModalVisible(true)}
+            activeOpacity={0.8}
           >
-            <Ionicons name="chevron-forward" size={18} color={isFuturePeriod ? '#c2c7cc' : COLORS.textDark} />
+            <Text style={styles.periodSelectText}>{BULAN_NAMA[bulan - 1]}</Text>
+            <Ionicons name="chevron-down" size={16} color={COLORS.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.periodSelect}
+            onPress={() => setTahunModalVisible(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.periodSelectText}>{tahun}</Text>
+            <Ionicons name="chevron-down" size={16} color={COLORS.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -502,52 +523,6 @@ export default function LaporanScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
-                {/* <View style={styles.itemDetailWrapper}>
-                  {(item.items_abj ?? []).length === 0 ? (
-                    <Text style={styles.itemDetailEmpty}>Tidak ada data rumah pada sesi ini.</Text>
-                  ) : (
-                    (item.items_abj ?? []).map((rumah, idx) => (
-                      <View key={idx} style={styles.rumahRow}>
-                        <Text style={styles.rumahName} numberOfLines={1}>
-                          {rumah.nama_kepala_keluarga}
-                        </Text>
-                        {isBerjentik(rumah.penampungan_berjentik) ? (
-                          <View style={styles.rumahBadgeDanger}>
-                            <Text style={styles.rumahBadgeDangerText}>Berjentik</Text>
-                          </View>
-                        ) : (
-                          <View style={styles.rumahBadgeSuccess}>
-                            <Text style={styles.rumahBadgeSuccessText}>Bebas Jentik</Text>
-                          </View>
-                        )}
-                      </View>
-                    ))
-                  )}
-
-                  <View style={styles.itemActionsRow}>
-                    <TouchableOpacity
-                      style={styles.itemActionButton}
-                      onPress={() => setViewItem(item)}
-                    >
-                      <Ionicons name="eye-outline" size={15} color={COLORS.textDark} />
-                      <Text style={styles.itemActionTextNeutral}>Lihat</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.itemActionButton}
-                      onPress={() => router.push(`/laporan-form?id=${item.id}`)}
-                    >
-                      <Ionicons name="create-outline" size={15} color={COLORS.accent} />
-                      <Text style={styles.itemActionTextAccent}>Edit</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.itemActionButton}
-                      onPress={() => handleDelete(item)}
-                    >
-                      <Ionicons name="trash-outline" size={15} color={COLORS.danger} />
-                      <Text style={styles.itemActionTextDanger}>Hapus</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View> */}
               </View>
             );
           })
@@ -584,6 +559,89 @@ export default function LaporanScreen() {
       </View>
 
       <BottomNav />
+
+      {/* Modal pilih bulan */}
+      <Modal
+        visible={bulanModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setBulanModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setBulanModalVisible(false)}
+        >
+          <View style={styles.modalSheet} onStartShouldSetResponder={() => true}>
+            <Text style={styles.modalTitle}>Pilih Bulan</Text>
+            <FlatList
+              data={BULAN_NAMA}
+              keyExtractor={(_, idx) => String(idx)}
+              style={{ maxHeight: 340 }}
+              renderItem={({ item, index }) => {
+                const nomorBulan = index + 1;
+                const disabled = tahun === now.getFullYear() && nomorBulan > now.getMonth() + 1;
+                const aktif = nomorBulan === bulan;
+                return (
+                  <TouchableOpacity
+                    style={[styles.modalOption, aktif && styles.modalOptionActive]}
+                    onPress={() => pilihBulan(nomorBulan)}
+                    disabled={disabled}
+                  >
+                    <Text
+                      style={[
+                        styles.modalOptionText,
+                        aktif && styles.modalOptionTextActive,
+                        disabled && styles.modalOptionTextDisabled,
+                      ]}
+                    >
+                      {item}
+                    </Text>
+                    {aktif && <Ionicons name="checkmark" size={18} color={COLORS.accent} />}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Modal pilih tahun */}
+      <Modal
+        visible={tahunModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTahunModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setTahunModalVisible(false)}
+        >
+          <View style={styles.modalSheet} onStartShouldSetResponder={() => true}>
+            <Text style={styles.modalTitle}>Pilih Tahun</Text>
+            <FlatList
+              data={daftarTahun}
+              keyExtractor={(t) => String(t)}
+              style={{ maxHeight: 340 }}
+              renderItem={({ item: t }) => {
+                const aktif = t === tahun;
+                return (
+                  <TouchableOpacity
+                    style={[styles.modalOption, aktif && styles.modalOptionActive]}
+                    onPress={() => pilihTahun(t)}
+                  >
+                    <Text style={[styles.modalOptionText, aktif && styles.modalOptionTextActive]}>
+                      {t}
+                    </Text>
+                    {aktif && <Ionicons name="checkmark" size={18} color={COLORS.accent} />}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -628,24 +686,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
+    gap: 10,
     marginBottom: 16,
   },
-  periodArrow: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: COLORS.cardBg,
+  periodSelect: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
+    backgroundColor: COLORS.cardBg,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    minWidth: 130,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 1,
   },
-  periodArrowDisabled: { opacity: 0.4 },
-  periodText: { fontSize: 16, fontWeight: '700', color: COLORS.textDark, minWidth: 140, textAlign: 'center' },
+  periodSelectText: { fontSize: 15, fontWeight: '700', color: COLORS.textDark },
 
   offlineBadge: {
     flexDirection: 'row',
@@ -748,11 +808,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
-  // itemDetailEmpty: {
-  //   fontSize: 12,
-  //   color: COLORS.textSecondary,
-  //   paddingVertical: 6,
-  // },
   rumahRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -799,8 +854,6 @@ const styles = StyleSheet.create({
   itemActionTextNeutral: { fontSize: 12.5, fontWeight: '700', color: COLORS.textSecondary },
   itemActionTextSuccess: { fontSize: 12.5, fontWeight: '700', color: COLORS.success },
 
-
-
   footer: {
     padding: 16,
     paddingBottom: 24,
@@ -832,4 +885,38 @@ const styles = StyleSheet.create({
   },
   submitButtonDisabled: { opacity: 0.5 },
   submitText: { color: COLORS.cardBg, fontWeight: '700', fontSize: 15 },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: COLORS.cardBg,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 28,
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.textDark,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 13,
+    paddingHorizontal: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalOptionActive: { backgroundColor: COLORS.accentSoft, borderRadius: 8 },
+  modalOptionText: { fontSize: 14.5, color: COLORS.textDark },
+  modalOptionTextActive: { color: COLORS.accent, fontWeight: '700' },
+  modalOptionTextDisabled: { color: '#c2c7cc' },
 });
