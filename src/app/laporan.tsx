@@ -348,42 +348,19 @@ export default function LaporanScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.accent} />
         }
       >
-        <View style={styles.header}>
+        <View style={styles.headerTitleRow}>
           <Text style={styles.title}>Laporan ABJ</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => router.push('/laporan-form')}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="add" size={18} color={COLORS.cardBg} />
-            <Text style={styles.addButtonText}>Tambah</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.exportButton, exporting && styles.exportButtonDisabled]}
-            onPress={handleExport}
-            disabled={exporting}
-            activeOpacity={0.85}
-          >
-            {exporting ? (
-              <ActivityIndicator size={14} color={COLORS.accent} />
-            ) : (
-              <Ionicons name="download-outline" size={16} color={COLORS.accent} />
-            )}
-            <Text style={styles.exportButtonText}>
-              {exporting ? 'Export...' : 'Export Excel'}
-            </Text>
-          </TouchableOpacity>
         </View>
 
-        {/* Filter periode: select bulan & tahun */}
-        <View style={styles.periodRow}>
-          <TouchableOpacity
+        {/* Aksi + filter periode sejajar */}
+        <View style={styles.actionsRow}>
+           <TouchableOpacity
             style={styles.periodSelect}
             onPress={() => setBulanModalVisible(true)}
             activeOpacity={0.8}
           >
             <Text style={styles.periodSelectText}>{BULAN_NAMA[bulan - 1]}</Text>
-            <Ionicons name="chevron-down" size={16} color={COLORS.textSecondary} />
+            <Ionicons name="chevron-down" size={14} color={COLORS.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -392,8 +369,35 @@ export default function LaporanScreen() {
             activeOpacity={0.8}
           >
             <Text style={styles.periodSelectText}>{tahun}</Text>
-            <Ionicons name="chevron-down" size={16} color={COLORS.textSecondary} />
+            <Ionicons name="chevron-down" size={14} color={COLORS.textSecondary} />
           </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => router.push('/laporan-form')}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add" size={17} color={COLORS.cardBg} />
+            <Text style={styles.addButtonText}>Tambah</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.exportButton, exporting && styles.exportButtonDisabled]}
+            onPress={handleExport}
+            disabled={exporting}
+            activeOpacity={0.85}
+          >
+            {exporting ? (
+              <ActivityIndicator size={13} color={COLORS.accent} />
+            ) : (
+              <Ionicons name="download-outline" size={15} color={COLORS.accent} />
+            )}
+            <Text style={styles.exportButtonText}>
+              {exporting ? 'Export...' : 'Export Excel'}
+            </Text>
+          </TouchableOpacity>
+
+         
         </View>
 
         {!isOnline && (
@@ -651,61 +655,60 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bg },
   content: { padding: 20, paddingBottom: 24 },
 
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+  headerTitleRow: {
+    marginBottom: 12,
   },
   title: { fontSize: 24, fontWeight: '700', color: COLORS.textDark },
+
+  actionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.accent,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
     borderRadius: 10,
     gap: 4,
   },
-  addButtonText: { color: COLORS.cardBg, fontWeight: '700', fontSize: 13 },
+  addButtonText: { color: COLORS.cardBg, fontWeight: '700', fontSize: 12.5 },
   exportButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.cardBg,
     borderWidth: 1,
     borderColor: COLORS.accent,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
     borderRadius: 10,
     gap: 5,
   },
   exportButtonDisabled: { opacity: 0.5 },
-  exportButtonText: { color: COLORS.accent, fontWeight: '700', fontSize: 13 },
+  exportButtonText: { color: COLORS.accent, fontWeight: '700', fontSize: 12.5 },
 
-  periodRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginBottom: 16,
-  },
   periodSelect: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 5,
     backgroundColor: COLORS.cardBg,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
     borderRadius: 10,
-    minWidth: 130,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 1,
   },
-  periodSelectText: { fontSize: 15, fontWeight: '700', color: COLORS.textDark },
+  periodSelectText: { fontSize: 12.5, fontWeight: '700', color: COLORS.textDark },
 
   offlineBadge: {
     flexDirection: 'row',
