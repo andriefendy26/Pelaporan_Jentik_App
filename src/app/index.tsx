@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
+  FlatList,
   Linking,
   Pressable,
   RefreshControl,
@@ -11,7 +12,8 @@ import {
   StyleSheet,
   Text,
   View,
-  TouchableOpacity
+  TouchableOpacity,
+  Modal
 } from 'react-native';
 import { BarChart, LineChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +26,7 @@ import { DashboardSummary, KelurahanAbj, MonthlyAbj, MonthlyRumah } from '../typ
 
 const screenWidth = Dimensions.get('window').width;
 const BULAN_LABEL = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+const JUMLAH_TAHUN_KE_BELAKANG = 5;
 
 const COLORS = {
   bg: '#EEEEEE',
@@ -56,20 +59,29 @@ export default function HomeScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
 
+  const pilihTahun = (t: number) => {
+    setTahun(t);
+    setTahunModalVisible(false);
+  };
+
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [rumahPerBulan, setRumahPerBulan] = useState<MonthlyRumah[]>([]);
   const [abjPerBulan, setAbjPerBulan] = useState<MonthlyAbj[]>([]);
   const [abjPerKelurahan, setAbjPerKelurahan] = useState<KelurahanAbj[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [tahun, setTahun] = useState(new Date().getFullYear());
+  const [tahunModalVisible, setTahunModalVisible] = useState(false);
+
+  const daftarTahun = Array.from({ length: JUMLAH_TAHUN_KE_BELAKANG }, (_, i) => new Date().getFullYear() - i);
 
   const loadDashboard = async () => {
     try {
       const [summaryRes, rumahRes, abjBulanRes, abjKelurahanRes] = await Promise.all([
-        dashboardService.getSummary(),
-        dashboardService.getRumahDiperiksaPerBulan(),
-        dashboardService.getAbjPerBulan(),
-        dashboardService.getAbjPerKelurahan(),
+        dashboardService.getSummary({ tahun }),
+        dashboardService.getRumahDiperiksaPerBulan({ tahun }),
+        dashboardService.getAbjPerBulan({ tahun }),
+        dashboardService.getAbjPerKelurahan({ tahun }),
       ]);
 
       setSummary(summaryRes?.data?.data ?? null);
@@ -88,7 +100,7 @@ export default function HomeScreen() {
     useCallback(() => {
       loadDashboard();
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [tahun])
   );
 
   const handleRefresh = () => {
@@ -191,11 +203,21 @@ export default function HomeScreen() {
           <>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Overview</Text>
-              {summary?.tahun ? (
-                <View style={styles.yearBadge}>
-                  <Text style={styles.yearBadgeText}>{summary.tahun}</Text>
-                </View>
-              ) : null}
+              <View style={styles.headerRightRow}>
+                {/* {summary?.tahun ? (
+                  <View style={styles.yearBadge}>
+                    <Text style={styles.yearBadgeText}>{tahun}</Text>
+                  </View>
+                ) : null} */}
+                <TouchableOpacity
+                  style={styles.periodSelect}
+                  onPress={() => setTahunModalVisible(true)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.periodSelectText}>{tahun}</Text>
+                  <Ionicons name="chevron-down" size={14} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              </View>
             </View>
             <View style={styles.statGrid}>
               <StatCard label="Total Laporan" value={summary?.total_laporan ?? 0} accent={COLORS.accent} />
@@ -271,6 +293,42 @@ export default function HomeScreen() {
       </ScrollView>
 
       <BottomNav />
+
+      <Modal
+        visible={tahunModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTahunModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setTahunModalVisible(false)}
+        >
+          <View style={styles.modalSheet} onStartShouldSetResponder={() => true}>
+            <Text style={styles.modalTitle}>Pilih Tahun</Text>
+            <FlatList
+              data={daftarTahun}
+              keyExtractor={(t) => String(t)}
+              style={{ maxHeight: 340 }}
+              renderItem={({ item: t }) => {
+                const aktif = t === tahun;
+                return (
+                  <TouchableOpacity
+                    style={[styles.modalOption, aktif && styles.modalOptionActive]}
+                    onPress={() => pilihTahun(t)}
+                  >
+                    <Text style={[styles.modalOptionText, aktif && styles.modalOptionTextActive]}>
+                      {t}
+                    </Text>
+                    {aktif && <Ionicons name="checkmark" size={18} color={COLORS.accent} />}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -383,6 +441,11 @@ infoCtaSubtitle: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2 },
     marginTop: 4,
   },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textDark },
+  headerRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   yearBadge: {
     backgroundColor: COLORS.accentSoft,
     paddingHorizontal: 10,
@@ -390,6 +453,24 @@ infoCtaSubtitle: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2 },
     borderRadius: 20,
   },
   yearBadgeText: { fontSize: 11.5, fontWeight: '700', color: COLORS.accent },
+  periodSelect: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    backgroundColor: COLORS.cardBg,
+    borderWidth: 1,
+    borderColor: '#e2e5e9',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  periodSelectText: { fontSize: 12.5, fontWeight: '700', color: COLORS.textDark },
 
   statGrid: {
     flexDirection: 'row',
@@ -435,4 +516,37 @@ infoCtaSubtitle: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2 },
     gap: 8,
   },
   emptyText: { color: COLORS.textSecondary, fontSize: 12.5, textAlign: 'center' },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: COLORS.cardBg,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 28,
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.textDark,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 13,
+    paddingHorizontal: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalOptionActive: { backgroundColor: COLORS.accentSoft, borderRadius: 8 },
+  modalOptionText: { fontSize: 14.5, color: COLORS.textDark },
+  modalOptionTextActive: { color: COLORS.accent, fontWeight: '700' },
 });
