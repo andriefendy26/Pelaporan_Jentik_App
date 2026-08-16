@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     color: COLORS.textDark,
   },
   headerSpacer: { width: 38 },
-  content: { padding: 20, paddingTop: 4, paddingBottom: 24 },
+  content: { padding: 20, paddingTop: 4, paddingBottom: 24, alignSelf: 'center', width: '100%', maxWidth: 720, minWidth: '100%' },
   infoBox: {
     backgroundColor: COLORS.cardBg,
     borderRadius: 16,

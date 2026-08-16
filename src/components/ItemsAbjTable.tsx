@@ -1,7 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -186,46 +189,56 @@ export default function ItemsAbjTable({ items, onChange }: Props) {
         )}
       </View>
 
-      {/* Modal tambah kepala keluarga */}
       <Modal
         visible={modalVisible}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text style={styles.modalCancel}>Batal</Text>
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>Tambah Kepala Keluarga</Text>
-              <View style={{ width: 44 }} />
-            </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <Pressable
+            style={styles.modalOverlay}
+            onPress={() => setModalVisible(false)}
+          >
+            <ScrollView
+              contentContainerStyle={styles.modalScrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Pressable style={styles.modalSheet}>
+                <View style={styles.modalHeader}>
+                  <TouchableOpacity onPress={() => setModalVisible(false)}>
+                    <Text style={styles.modalCancel}>Batal</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.modalTitle}>Tambah Kepala Keluarga</Text>
+                  <View style={{ width: 44 }} />
+                </View>
 
-            <View style={styles.modalBody}>
-              <Text style={styles.modalLabel}>Nama Kepala Keluarga</Text>
-              <TextInput
-                style={[styles.modalInput, nameError && styles.modalInputError]}
-                placeholder="Masukkan nama"
-                placeholderTextColor="#9aa0a6"
-                value={name}
-                autoFocus
-                onChangeText={(text) => {
-                  setName(text);
-                  if (text.trim()) setNameError(false);
-                }}
-              />
-              {nameError && (
-                <Text style={styles.modalErrorText}>Nama wajib diisi.</Text>
-              )}
+                <View style={styles.modalBody}>
+                  <Text style={styles.modalLabel}>Nama Kepala Keluarga</Text>
+                  <TextInput
+                    style={[styles.modalInput, nameError && styles.modalInputError]}
+                    placeholder="Masukkan nama"
+                    placeholderTextColor="#9aa0a6"
+                    value={name}
+                    autoFocus
+                    onChangeText={(text) => {
+                      setName(text);
+                      if (text.trim()) setNameError(false);
+                    }}
+                  />
+                  {nameError && (
+                    <Text style={styles.modalErrorText}>Nama wajib diisi.</Text>
+                  )}
 
-              <View style={styles.modalNumRow}>
-                <View style={styles.modalNumCol}>
-                  <View style={styles.modalLabelRow}>
-                    <View style={[styles.dot, { backgroundColor: COLORS.danger }]} />
-                    <Text style={styles.modalLabel}>Berjentik</Text>
-                  </View>
+                  <View style={styles.modalNumRow}>
+                    <View style={styles.modalNumCol}>
+                      <View style={styles.modalLabelRow}>
+                        <View style={[styles.dot, { backgroundColor: COLORS.danger }]} />
+                        <Text style={styles.modalLabel}>Berjentik</Text>
+                      </View>
                   <TextInput
                     style={styles.modalInput}
                     placeholder="0"
@@ -233,14 +246,14 @@ export default function ItemsAbjTable({ items, onChange }: Props) {
                     keyboardType="number-pad"
                     maxLength={5}
                     value={berjentik}
-                    onChangeText={setBerjentik}
+                    onChangeText={(text) => setBerjentik(sanitizeNumeric(text))}
                   />
-                </View>
-                <View style={styles.modalNumCol}>
-                  <View style={styles.modalLabelRow}>
-                    <View style={[styles.dot, { backgroundColor: COLORS.accent }]} />
-                    <Text style={styles.modalLabel}>Tidak Berjentik</Text>
-                  </View>
+                    </View>
+                    <View style={styles.modalNumCol}>
+                      <View style={styles.modalLabelRow}>
+                        <View style={[styles.dot, { backgroundColor: COLORS.accent }]} />
+                        <Text style={styles.modalLabel}>Tidak Berjentik</Text>
+                      </View>
                   <TextInput
                     style={styles.modalInput}
                     placeholder="0"
@@ -248,24 +261,26 @@ export default function ItemsAbjTable({ items, onChange }: Props) {
                     keyboardType="number-pad"
                     maxLength={5}
                     value={tidakBerjentik}
-                    onChangeText={setTidakBerjentik}
+                    onChangeText={(text) => setTidakBerjentik(sanitizeNumeric(text))}
                   />
+                    </View>
+                  </View>
                 </View>
-              </View>
-            </View>
 
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnPrimary]}
-                onPress={submitModal}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="add" size={16} color={COLORS.cardBg} />
-                <Text style={styles.modalBtnText}>Tambahkan</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+                <View style={styles.modalFooter}>
+                  <TouchableOpacity
+                    style={[styles.modalBtn, styles.modalBtnPrimary]}
+                    onPress={submitModal}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons name="add" size={16} color={COLORS.cardBg} />
+                    <Text style={styles.modalBtnText}>Tambahkan</Text>
+                  </TouchableOpacity>
+                </View>
+              </Pressable>
+            </ScrollView>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -363,12 +378,19 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   modalSheet: {
     backgroundColor: COLORS.cardBg,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 480,
     paddingBottom: 16,
   },
   modalHeader: {
