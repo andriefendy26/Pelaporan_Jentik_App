@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   modalTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textDark },
-  modalCancel: { fontSize: 14, color: COLORS.textSecondary, width: 44 },
+  modalCancel: { fontSize: 14, color: COLORS.danger, width: 44 },
   modalBody: { paddingHorizontal: 20, paddingTop: 16 },
   modalLabel: { fontSize: 12, color: COLORS.textSecondary, marginBottom: 4, marginTop: 8 },
   modalInput: {
