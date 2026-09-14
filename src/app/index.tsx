@@ -39,6 +39,12 @@ const COLORS = {
   dangerSoft: 'rgba(220, 38, 38, 0.08)',
 };
 
+
+
+function getInitial(name?: string, username?: string) {
+  const source = name || username || '?';
+  return source.trim().charAt(0).toUpperCase();
+}
 const chartConfig = {
   backgroundColor: COLORS.cardBg,
   backgroundGradientFrom: COLORS.cardBg,
@@ -49,12 +55,6 @@ const chartConfig = {
   propsForBackgroundLines: { stroke: '#e0e0e0' },
   style: { borderRadius: 16 },
 };
-
-function getInitial(name?: string, username?: string) {
-  const source = name || username || '?';
-  return source.trim().charAt(0).toUpperCase();
-}
-
 export default function HomeScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
