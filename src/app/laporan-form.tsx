@@ -237,7 +237,15 @@ export default function LaporanFormScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      // Android sebelumnya `behavior={undefined}` -> KeyboardAvoidingView
+      // tidak melakukan apa-apa di Android, jadi form tidak pernah naik
+      // saat keyboard muncul (termasuk saat mengisi input di dalam
+      // ItemsAbjTable). "height" membuat area ScrollView otomatis
+      // menyusut ketika keyboard tampil, sehingga input yang sedang
+      // difokus (termasuk yang nested di ItemsAbjTable) ikut terangkat
+      // dan ScrollView bisa auto-scroll ke posisinya.
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
     >
       <View style={styles.header}>
         {/* <TouchableOpacity
@@ -264,7 +272,12 @@ export default function LaporanFormScreen() {
         style={styles.container}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
+        // Bantu iOS 13+ menghitung inset keyboard secara otomatis, jadi
+        // input yang difokus di dalam ItemsAbjTable ikut ter-scroll ke
+        // atas keyboard tanpa perlu offset manual tambahan.
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
       >
         {/* Info akun */}
         <View style={styles.infoBox}>
@@ -324,7 +337,9 @@ export default function LaporanFormScreen() {
         </View>
         <ItemsAbjTable items={items} onChange={setItems} />
 
-        <View style={{ height: 8 }} />
+        {/* Ruang ekstra di bawah tabel supaya baris/input terakhir tidak
+            ketutupan footer tombol submit saat keyboard aktif. */}
+        <View style={{ height: 24 }} />
       </ScrollView>
 
       {/* Sticky submit button */}

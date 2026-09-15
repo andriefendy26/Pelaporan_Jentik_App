@@ -153,11 +153,7 @@ export default function ItemsAbjTable({ items, onChange }: Props) {
                 </Text>
               </View>
             ) : (
-              <ScrollView
-                style={styles.vScroll}
-                nestedScrollEnabled
-                keyboardShouldPersistTaps="handled"
-              >
+              <View>
                 {items.map((item, index) => (
                   <View key={index}>
                     <View
@@ -218,7 +214,7 @@ export default function ItemsAbjTable({ items, onChange }: Props) {
                   <Text style={[styles.cellNum, styles.totalText]}>{totalTidakBerjentik}</Text>
                   <View style={styles.cellAction} />
                 </View>
-              </ScrollView>
+              </View>
             )}
           </View>
         </ScrollView>
@@ -359,7 +355,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     overflow: 'hidden',
   },
-  vScroll: { maxHeight: 360 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -11,14 +11,15 @@
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.andriefendy.Pelaporan-Jentik-App"
     },
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/icon-app.png"
+      "android": {
+        "adaptiveIcon": {
+          "backgroundColor": "#E6F4FE",
+          "foregroundImage": "./assets/images/icon-app.png"
+        },
+        "predictiveBackGestureEnabled": false,
+        "softwareKeyboardLayoutMode": "resize",
+        "package": "com.andriefendy.Pelaporan_Jentik_App"
       },
-      "predictiveBackGestureEnabled": false,
-      "package": "com.andriefendy.Pelaporan_Jentik_App"
-    },
     "web": {
       "output": "static",
       "favicon": "./assets/images/icon.png"
