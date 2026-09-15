@@ -45,18 +45,26 @@ function sanitizeNumeric(text: string) {
   return digitsOnly.replace(/^0+(?=\d)/, '');
 }
 
+// Fixed pixel widths for every non-flex column, plus a sensible minimum
+// for the flexible "name" column. Used to size the horizontal ScrollView
+// so header and body always line up and never get squeezed on narrow screens.
 const COL = {
   no: 34,
-  name: 0, // flex
+  name: 130,
   num: 64,
   action: 40,
 };
+
+const ROW_HORIZONTAL_PADDING = 16;
+const TABLE_MIN_WIDTH =
+  COL.no + COL.name + COL.num * 2 + COL.action + ROW_HORIZONTAL_PADDING;
 
 export default function ItemsAbjTable({ items, onChange }: Props) {
   const [modalVisible, setModalVisible] = useState(false);
   const [name, setName] = useState('');
   const [berjentik, setBerjentik] = useState('0');
   const [tidakBerjentik, setTidakBerjentik] = useState('0');
+  const [keterangan, setKeterangan] = useState('');
   const [nameError, setNameError] = useState(false);
 
   const totalBerjentik = items.reduce(
@@ -72,6 +80,7 @@ export default function ItemsAbjTable({ items, onChange }: Props) {
     setName('');
     setBerjentik('0');
     setTidakBerjentik('0');
+    setKeterangan('');
     setNameError(false);
     setModalVisible(true);
   };
@@ -81,7 +90,13 @@ export default function ItemsAbjTable({ items, onChange }: Props) {
       setNameError(true);
       return;
     }
-    onChange([...items, { ...emptyItem(), nama_kepala_keluarga: name.trim(), penampungan_berjentik: berjentik || '0', penampungan_tidak_berjentik: tidakBerjentik || '0' }]);
+    onChange([...items, {
+      ...emptyItem(),
+      nama_kepala_keluarga: name.trim(),
+      penampungan_berjentik: berjentik || '0',
+      penampungan_tidak_berjentik: tidakBerjentik || '0',
+      keterangan: keterangan.trim() || undefined,
+    }]);
     setModalVisible(false);
   };
 
@@ -110,83 +125,103 @@ export default function ItemsAbjTable({ items, onChange }: Props) {
       </View>
 
       <View style={styles.tableCard}>
-        {/* Table header */}
-        <View style={[styles.row, styles.headerRowTable]}>
-          <Text style={[styles.cellNo, styles.headerText]}>No</Text>
-          <Text style={[styles.cellName, styles.headerText]}>Nama Kepala Keluarga</Text>
-          <Text style={[styles.cellNum, styles.headerText]}>Berjentik</Text>
-          <Text style={[styles.cellNum, styles.headerText]}>Tdk</Text>
-          <View style={styles.cellAction} />
-        </View>
-
-        {items.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <Ionicons name="grid-outline" size={22} color={COLORS.textSecondary} />
-            <Text style={styles.emptyText}>
-              Belum ada data. Tap &quot;Tambah&quot; untuk menambahkan kepala keluarga.
-            </Text>
-          </View>
-        ) : (
-          <ScrollView
-            style={styles.scroll}
-            nestedScrollEnabled
-            keyboardShouldPersistTaps="handled"
-          >
-            {items.map((item, index) => (
-              <View
-                key={index}
-                style={[styles.row, index % 2 === 1 && styles.rowAlt]}
-              >
-                <Text style={[styles.cellNo, styles.cellText]}>{index + 1}</Text>
-                <TextInput
-                  style={[styles.cellName, styles.cellInput]}
-                  placeholder="Nama KK"
-                  placeholderTextColor="#9aa0a6"
-                  value={item.nama_kepala_keluarga}
-                  onChangeText={(text) => updateItem(index, 'nama_kepala_keluarga', text)}
-                />
-                <TextInput
-                  style={[styles.cellNum, styles.cellInput, styles.cellCenter]}
-                  placeholder="0"
-                  placeholderTextColor="#9aa0a6"
-                  keyboardType="number-pad"
-                  maxLength={5}
-                  value={item.penampungan_berjentik}
-                  onChangeText={(text) => updateNumeric(index, 'penampungan_berjentik', text)}
-                />
-                <TextInput
-                  style={[styles.cellNum, styles.cellInput, styles.cellCenter]}
-                  placeholder="0"
-                  placeholderTextColor="#9aa0a6"
-                  keyboardType="number-pad"
-                  maxLength={5}
-                  value={item.penampungan_tidak_berjentik}
-                  onChangeText={(text) => updateNumeric(index, 'penampungan_tidak_berjentik', text)}
-                />
-                <TouchableOpacity
-                  style={styles.cellAction}
-                  onPress={() => removeItem(index)}
-                  hitSlop={6}
-                >
-                  <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
-                </TouchableOpacity>
-              </View>
-            ))}
-
-            {/* Total row */}
-            <View style={[styles.row, styles.totalRow]}>
-              <Text style={[styles.cellNo, styles.totalText]}>Σ</Text>
-              <Text style={[styles.cellName, styles.totalText]}>Total</Text>
-              <Text style={[styles.cellNum, styles.cellCenter, styles.totalText]}>
-                {totalBerjentik}
-              </Text>
-              <Text style={[styles.cellNum, styles.cellCenter, styles.totalText]}>
-                {totalTidakBerjentik}
-              </Text>
+        {/*
+          Header and body share ONE horizontal ScrollView so columns never
+          drift out of alignment, and the table can be swiped sideways
+          instead of getting squeezed on narrow screens.
+        */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={items.length > 0}
+          contentContainerStyle={{ minWidth: TABLE_MIN_WIDTH, width: '100%' }}
+        >
+          <View style={{ flex: 1 }}>
+            {/* Table header */}
+            <View style={[styles.row, styles.headerRowTable]}>
+              <Text style={[styles.cellNo, styles.headerText]}>No</Text>
+              <Text style={[styles.cellName, styles.headerText]}>Nama Kepala Keluarga</Text>
+              <Text style={[styles.cellNum, styles.headerText]}>Berjentik</Text>
+              <Text style={[styles.cellNum, styles.headerText]}>Tdk</Text>
               <View style={styles.cellAction} />
             </View>
-          </ScrollView>
-        )}
+
+            {items.length === 0 ? (
+              <View style={styles.emptyBox}>
+                <Ionicons name="grid-outline" size={22} color={COLORS.textSecondary} />
+                <Text style={styles.emptyText}>
+                  Belum ada data. Tap &quot;Tambah&quot; untuk menambahkan kepala keluarga.
+                </Text>
+              </View>
+            ) : (
+              <ScrollView
+                style={styles.vScroll}
+                nestedScrollEnabled
+                keyboardShouldPersistTaps="handled"
+              >
+                {items.map((item, index) => (
+                  <View key={index}>
+                    <View
+                      style={[styles.row, index % 2 === 1 && styles.rowAlt]}
+                    >
+                      <Text style={[styles.cellNo, styles.cellText]}>{index + 1}</Text>
+                      <TextInput
+                        style={[styles.cellName, styles.cellInput]}
+                        placeholder="Nama KK"
+                        placeholderTextColor="#9aa0a6"
+                        value={item.nama_kepala_keluarga}
+                        onChangeText={(text) => updateItem(index, 'nama_kepala_keluarga', text)}
+                      />
+                      <TextInput
+                        style={[styles.cellNum, styles.cellInput]}
+                        placeholder="0"
+                        placeholderTextColor="#9aa0a6"
+                        keyboardType="number-pad"
+                        maxLength={5}
+                        value={item.penampungan_berjentik}
+                        onChangeText={(text) => updateNumeric(index, 'penampungan_berjentik', text)}
+                      />
+                      <TextInput
+                        style={[styles.cellNum, styles.cellInput]}
+                        placeholder="0"
+                        placeholderTextColor="#9aa0a6"
+                        keyboardType="number-pad"
+                        maxLength={5}
+                        value={item.penampungan_tidak_berjentik}
+                        onChangeText={(text) => updateNumeric(index, 'penampungan_tidak_berjentik', text)}
+                      />
+                      <TouchableOpacity
+                        style={styles.cellAction}
+                        onPress={() => removeItem(index)}
+                        hitSlop={6}
+                      >
+                        <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.noteRow}>
+                      <View style={styles.noteSpacer} />
+                      {item.keterangan && item.keterangan.trim() ? (
+                        <Text style={styles.noteText} numberOfLines={3}>
+                          {item.keterangan.trim()}
+                        </Text>
+                      ) : (
+                        <Text style={styles.notePlaceholder}>Tidak ada keterangan</Text>
+                      )}
+                    </View>
+                  </View>
+                ))}
+
+                {/* Total row */}
+                <View style={[styles.row, styles.totalRow]}>
+                  <Text style={[styles.cellNo, styles.totalText]}>Σ</Text>
+                  <Text style={[styles.cellName, styles.totalText]}>Total</Text>
+                  <Text style={[styles.cellNum, styles.totalText]}>{totalBerjentik}</Text>
+                  <Text style={[styles.cellNum, styles.totalText]}>{totalTidakBerjentik}</Text>
+                  <View style={styles.cellAction} />
+                </View>
+              </ScrollView>
+            )}
+          </View>
+        </ScrollView>
       </View>
 
       <Modal
@@ -239,32 +274,43 @@ export default function ItemsAbjTable({ items, onChange }: Props) {
                         <View style={[styles.dot, { backgroundColor: COLORS.danger }]} />
                         <Text style={styles.modalLabel}>Berjentik</Text>
                       </View>
-                  <TextInput
-                    style={styles.modalInput}
-                    placeholder="0"
-                    placeholderTextColor="#9aa0a6"
-                    keyboardType="number-pad"
-                    maxLength={5}
-                    value={berjentik}
-                    onChangeText={(text) => setBerjentik(sanitizeNumeric(text))}
-                  />
+                      <TextInput
+                        style={styles.modalInput}
+                        placeholder="0"
+                        placeholderTextColor="#9aa0a6"
+                        keyboardType="number-pad"
+                        maxLength={5}
+                        value={berjentik}
+                        onChangeText={(text) => setBerjentik(sanitizeNumeric(text))}
+                      />
                     </View>
                     <View style={styles.modalNumCol}>
                       <View style={styles.modalLabelRow}>
                         <View style={[styles.dot, { backgroundColor: COLORS.accent }]} />
                         <Text style={styles.modalLabel}>Tidak Berjentik</Text>
                       </View>
-                  <TextInput
-                    style={styles.modalInput}
-                    placeholder="0"
-                    placeholderTextColor="#9aa0a6"
-                    keyboardType="number-pad"
-                    maxLength={5}
-                    value={tidakBerjentik}
-                    onChangeText={(text) => setTidakBerjentik(sanitizeNumeric(text))}
-                  />
+                      <TextInput
+                        style={styles.modalInput}
+                        placeholder="0"
+                        placeholderTextColor="#9aa0a6"
+                        keyboardType="number-pad"
+                        maxLength={5}
+                        value={tidakBerjentik}
+                        onChangeText={(text) => setTidakBerjentik(sanitizeNumeric(text))}
+                      />
                     </View>
                   </View>
+
+                  <Text style={styles.modalLabel}>Keterangan</Text>
+                  <TextInput
+                    style={[styles.modalInput, styles.modalTextarea]}
+                    placeholder="Masukkan keterangan (opsional)"
+                    placeholderTextColor="#9aa0a6"
+                    value={keterangan}
+                    onChangeText={setKeterangan}
+                    multiline
+                    textAlignVertical="top"
+                  />
                 </View>
 
                 <View style={styles.modalFooter}>
@@ -313,7 +359,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     overflow: 'hidden',
   },
-  scroll: { maxHeight: 360 },
+  vScroll: { maxHeight: 360 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -328,22 +374,37 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
     paddingVertical: 10,
   },
-  headerText: { color: COLORS.cardBg, fontWeight: '700', fontSize: 11.5 },
+  headerText: {
+    color: COLORS.cardBg,
+    fontWeight: '700',
+    fontSize: 11.5,
+    textAlign: 'center',
+  },
 
-  cellNo: { width: COL.no, fontSize: 12.5, color: COLORS.textSecondary, textAlign: 'center' },
+  // Every column below now carries its own textAlign, and header cells
+  // reuse the SAME base style as data cells — so header and data are
+  // always aligned the same way, column by column.
+  cellNo: {
+    width: COL.no,
+    fontSize: 12.5,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
   cellName: {
     flex: 1,
+    minWidth: COL.name,
     fontSize: 13,
     color: COLORS.textDark,
+    textAlign: 'left',
     paddingHorizontal: 4,
   },
   cellNum: {
     width: COL.num,
     fontSize: 13,
     color: COLORS.textDark,
+    textAlign: 'center',
     paddingHorizontal: 2,
   },
-  cellCenter: { textAlign: 'center' },
   cellText: { fontWeight: '600' },
   cellInput: {
     backgroundColor: COLORS.bg,
@@ -352,6 +413,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 6,
     paddingVertical: 7,
+  },
+  noteRow: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  noteSpacer: {
+    marginLeft: COL.no + 4,
+  },
+  noteText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  notePlaceholder: {
+    fontSize: 12,
+    color: '#b0b8c1',
+    fontStyle: 'italic',
+    marginTop: 2,
   },
   cellAction: {
     width: COL.action,
@@ -372,6 +452,7 @@ const styles = StyleSheet.create({
     paddingVertical: 28,
     gap: 8,
     paddingHorizontal: 24,
+    minWidth: TABLE_MIN_WIDTH,
   },
   emptyText: { color: COLORS.textSecondary, fontSize: 12.5, textAlign: 'center' },
 
@@ -415,6 +496,10 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     fontSize: 14,
     color: COLORS.textDark,
+  },
+  modalTextarea: {
+    minHeight: 72,
+    paddingTop: 10,
   },
   modalInputError: {
     borderColor: COLORS.danger,

@@ -4,6 +4,7 @@ export interface ItemAbj {
   nama_kepala_keluarga: string;
   penampungan_berjentik: string;
   penampungan_tidak_berjentik: string;
+  keterangan?: string;
 }
 
 export interface FormAbj {

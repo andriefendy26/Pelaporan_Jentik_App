@@ -217,18 +217,27 @@ export default function LaporanDetailScreen() {
           </View>
         </View>
 
-        {/* Ringkasan */}
+        {/* Ringkasan — kartu solid, satu warna penuh per kartu, konsisten strukturnya */}
         <View style={styles.summaryRow}>
-          <View style={styles.summaryCard}>
+          <View style={[styles.summaryCard, styles.summaryCardPrimary]}>
+            <View style={styles.summaryIconWrapper}>
+              <Ionicons name="home" size={16} color={COLORS.cardBg} />
+            </View>
             <Text style={styles.summaryValue}>{totalRumah}</Text>
             <Text style={styles.summaryLabel}>Rumah Diperiksa</Text>
           </View>
-          <View style={[styles.summaryCard, { backgroundColor: COLORS.dangerSoft }]}>
-            <Text style={[styles.summaryValue, { color: COLORS.danger }]}>{totalBerjentik}</Text>
+          <View style={[styles.summaryCard, styles.summaryCardDanger]}>
+            <View style={styles.summaryIconWrapper}>
+              <Ionicons name="warning" size={16} color={COLORS.cardBg} />
+            </View>
+            <Text style={styles.summaryValue}>{totalBerjentik}</Text>
             <Text style={styles.summaryLabel}>Berjentik</Text>
           </View>
-          <View style={[styles.summaryCard, { backgroundColor: COLORS.successSoft }]}>
-            <Text style={[styles.summaryValue, { color: COLORS.success }]}>{totalTidakBerjentik}</Text>
+          <View style={[styles.summaryCard, styles.summaryCardSuccess]}>
+            <View style={styles.summaryIconWrapper}>
+              <Ionicons name="checkmark-circle" size={16} color={COLORS.cardBg} />
+            </View>
+            <Text style={styles.summaryValue}>{totalTidakBerjentik}</Text>
             <Text style={styles.summaryLabel}>Tidak Berjentik</Text>
           </View>
         </View>
@@ -252,20 +261,32 @@ export default function LaporanDetailScreen() {
           ) : (
             <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
               {(data.items_abj ?? []).map((rumah, idx) => (
-                <View
-                  key={idx}
-                  style={[styles.row, idx % 2 === 1 && styles.rowAlt]}
-                >
-                  <Text style={[styles.cellNo, styles.cellText]}>{idx + 1}</Text>
-                  <Text style={[styles.cellName, styles.cellText]} numberOfLines={2}>
-                    {rumah.nama_kepala_keluarga || '-'}
-                  </Text>
-                  <Text style={[styles.cellNum, styles.cellCenter, styles.cellText]}>
-                    {rumah.penampungan_berjentik || '0'}
-                  </Text>
-                  <Text style={[styles.cellNum, styles.cellCenter, styles.cellText]}>
-                    {rumah.penampungan_tidak_berjentik || '0'}
-                  </Text>
+                <View key={idx}>
+                  <View
+                    style={[styles.row, idx % 2 === 1 && styles.rowAlt]}
+                  >
+                    <Text style={[styles.cellNo, styles.cellText]}>{idx + 1}</Text>
+                    <Text style={[styles.cellName, styles.cellText]} numberOfLines={2}>
+                      {rumah.nama_kepala_keluarga || '-'}
+                    </Text>
+                    <Text style={[styles.cellNum, styles.cellCenter, styles.cellText]}>
+                      {rumah.penampungan_berjentik || '0'}
+                    </Text>
+                    <Text style={[styles.cellNum, styles.cellCenter, styles.cellText]}>
+                      {rumah.penampungan_tidak_berjentik || '0'}
+                    </Text>
+                  </View>
+                  <View style={styles.noteRow}>
+                    <View style={styles.noteSpacer}>
+                      {rumah.keterangan && rumah.keterangan.trim() ? (
+                        <Text style={styles.noteText} numberOfLines={3}>
+                          {rumah.keterangan.trim()}
+                        </Text>
+                      ) : (
+                        <Text style={styles.notePlaceholder}>Tidak ada keterangan</Text>
+                      )}
+                    </View>
+                  </View>
                 </View>
               ))}
             </ScrollView>
@@ -348,21 +369,41 @@ const styles = StyleSheet.create({
     marginLeft: 44,
   },
 
+  // Ringkasan: tiga kartu solid (bukan soft-tint lagi), struktur sama
+  // persis satu sama lain — ikon bulat kecil, angka besar, label — jadi
+  // kelihatan rapi sebagai satu set, bukan tiga gaya berbeda.`
   summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 22 },
   summaryCard: {
     flex: 1,
-    backgroundColor: COLORS.cardBg,
     borderRadius: 14,
-    padding: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 10,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.08,
     shadowRadius: 6,
-    elevation: 1,
+    elevation: 2,
   },
-  summaryValue: { fontSize: 22, fontWeight: '700', color: COLORS.textDark },
-  summaryLabel: { fontSize: 11.5, color: COLORS.textSecondary, marginTop: 2 },
+  summaryCardPrimary: { backgroundColor: COLORS.accent },
+  summaryCardDanger: { backgroundColor: COLORS.danger },
+  summaryCardSuccess: { backgroundColor: COLORS.success },
+  summaryIconWrapper: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  summaryValue: { fontSize: 22, fontWeight: '700', color: COLORS.cardBg },
+  summaryLabel: {
+    fontSize: 11.5,
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 2,
+    textAlign: 'center',
+  },
 
   sectionLabel: { fontSize: 14, fontWeight: '700', color: COLORS.textDark, marginBottom: 10 },
 
@@ -393,6 +434,24 @@ const styles = StyleSheet.create({
   cellNum: { width: 64, fontSize: 13, color: COLORS.textDark, paddingHorizontal: 2 },
   cellCenter: { textAlign: 'center' },
   cellText: { fontWeight: '600' },
+
+  noteRow: {
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+  },
+  noteSpacer: {
+    marginLeft: 44,
+  },
+  noteText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    lineHeight: 16,
+  },
+  notePlaceholder: {
+    fontSize: 12,
+    color: '#b0b8c1',
+    fontStyle: 'italic',
+  },
 
   emptyBox: {
     alignItems: 'center',
