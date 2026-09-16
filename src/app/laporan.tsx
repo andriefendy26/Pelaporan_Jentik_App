@@ -22,6 +22,8 @@ import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { abjService, laporanBulananService } from '../services/Jentikservice';
 import { downloadAndShareExcel } from '../services/downloadExcel';
 import { FormAbjList } from '../types/abj';
+import { useAuth } from '../services/Context/AuthContext';
+import type { KelurahanItem, RtItem } from '../services/Jentikservice';
 
 const COLORS = {
   bg: '#EEEEEE',
@@ -73,7 +75,15 @@ function isBerjentik(value: string | number): boolean {
 
 export default function LaporanScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const isOnline = useNetworkStatus();
+
+  const isSuperAdmin = (() => {
+    if (!user) return false;
+    const roles = user?.roles ?? user?.role ?? [];
+    if (Array.isArray(roles)) return roles.some((r: any) => r?.name === 'super_admin' || r === 'super_admin');
+    return roles === 'super_admin';
+  })();
 
   const now = new Date();
   const [bulan, setBulan] = useState(now.getMonth() + 1);
@@ -96,6 +106,17 @@ export default function LaporanScreen() {
   const [bulanModalVisible, setBulanModalVisible] = useState(false);
   const [tahunModalVisible, setTahunModalVisible] = useState(false);
 
+  const [showKelurahanFilterModal, setShowKelurahanFilterModal] = useState(false);
+  const [showRtFilterModal, setShowRtFilterModal] = useState(false);
+  const [kelurahanFilterList, setKelurahanFilterList] = useState<KelurahanItem[]>([]);
+  const [rtFilterList, setRtFilterList] = useState<RtItem[]>([]);
+  const [selectedFilterKelurahanId, setSelectedFilterKelurahanId] = useState<number | null>(null);
+  const [selectedFilterKelurahanName, setSelectedFilterKelurahanName] = useState<string>('');
+  const [selectedFilterRtId, setSelectedFilterRtId] = useState<number | null>(null);
+  const [selectedFilterRtName, setSelectedFilterRtName] = useState<string>('');
+  const [kelurahanFilterLoading, setKelurahanFilterLoading] = useState(false);
+  const [rtFilterLoading, setRtFilterLoading] = useState(false);
+
   const totalRumah = items.reduce((sum, f) => sum + (f.items_abj?.length ?? 0), 0);
   const isFuturePeriod =
     tahun > now.getFullYear() || (tahun === now.getFullYear() && bulan > now.getMonth() + 1);
@@ -108,14 +129,35 @@ export default function LaporanScreen() {
     setNeedsReauth(s.needsReauth);
   };
 
-  const loadData = async () => {
+  // FIX: `loadData` sebelumnya selalu membaca `selectedFilterKelurahanId` /
+  // `selectedFilterRtId` langsung dari state. Karena setState() itu
+  // asinkron, memanggil `loadData()` tepat setelah `setSelectedFilter...()`
+  // (seperti di handler pilih RT / hapus filter di bawah) membuat request
+  // masih terkirim dengan nilai LAMA — filter kelihatan seperti tidak
+  // berfungsi. `overrides` di sini memungkinkan pemanggil mengirim nilai
+  // filter yang baru secara eksplisit, tanpa harus menunggu re-render.
+  const loadData = async (overrides?: { id_kelurahan?: number | null; id_rt?: number | null }) => {
     try {
+      const idKelurahan = overrides && 'id_kelurahan' in overrides
+        ? overrides.id_kelurahan
+        : selectedFilterKelurahanId;
+      const idRt = overrides && 'id_rt' in overrides ? overrides.id_rt : selectedFilterRtId;
+
+      const params: { bulan?: number; tahun?: number; id_kelurahan?: number; id_rt?: number } = {
+        bulan,
+        tahun,
+      };
+      if (isSuperAdmin && idKelurahan) {
+        params.id_kelurahan = idKelurahan;
+      }
+      if (isSuperAdmin && idRt) {
+        params.id_rt = idRt;
+      }
       const [formRes, statusRes] = await Promise.all([
-        abjService.getAll({ bulan, tahun }),
+        abjService.getAll(params),
         laporanBulananService.getStatus({ bulan, tahun }),
       ]);
       setItems(formRes?.data?.data ?? []);
-      // console.log('Loaded items:', formRes?.data?.data);
       setStatus(statusRes?.data?.status ?? 'belum_ada_data');
       setSubmittedAt(statusRes?.data?.submitted_at ?? null);
     } catch (error: any) {
@@ -125,6 +167,37 @@ export default function LaporanScreen() {
       setRefreshing(false);
     }
   };
+
+  const fetchKelurahanFilter = async () => {
+    setKelurahanFilterLoading(true);
+    try {
+      const res = await abjService.getKelurahan();
+      setKelurahanFilterList(res?.data?.data ?? []);
+    } catch {
+      Alert.alert('Gagal', 'Tidak dapat memuat daftar kelurahan.');
+    } finally {
+      setKelurahanFilterLoading(false);
+    }
+  };
+
+  const fetchRtFilter = async (id_kelurahan: number) => {
+    setRtFilterLoading(true);
+    try {
+      const res = await abjService.getRtByKelurahan(id_kelurahan);
+      setRtFilterList(res?.data?.data ?? []);
+    } catch {
+      Alert.alert('Gagal', 'Tidak dapat memuat daftar RT.');
+    } finally {
+      setRtFilterLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isSuperAdmin) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchKelurahanFilter();
+    }
+  }, [isSuperAdmin]);
 
   const runSync = async () => {
     setSyncing(true);
@@ -136,8 +209,13 @@ export default function LaporanScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      setSelectedFilterKelurahanId(null);
+      setSelectedFilterKelurahanName('');
+      setSelectedFilterRtId(null);
+      setSelectedFilterRtName('');
+      setRtFilterList([]);
       setLoading(true);
-      loadData();
+      loadData({ id_kelurahan: null, id_rt: null });
       loadPending();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [bulan, tahun])
@@ -434,6 +512,61 @@ export default function LaporanScreen() {
           </View>
         </View>
 
+        {isSuperAdmin && (
+          <View style={styles.filterBox}>
+            <View style={styles.filterHeader}>
+              <Ionicons name="filter-outline" size={15} color={COLORS.accent} />
+              <Text style={styles.sectionLabel}>Filter Wilayah</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.filterRow}
+              onPress={() => setShowKelurahanFilterModal(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.filterValue, !selectedFilterKelurahanId && styles.filterPlaceholder]}>
+                Kelurahan: {selectedFilterKelurahanName || 'Semua Kelurahan'}
+              </Text>
+              <Text style={styles.editIcon}>Ubah</Text>
+            </TouchableOpacity>
+            <View style={styles.filterDivider} />
+            <TouchableOpacity
+              style={[styles.filterRow, !selectedFilterKelurahanId && styles.filterRowDisabled]}
+              onPress={() => {
+                if (selectedFilterKelurahanId) {
+                  setShowRtFilterModal(true);
+                } else {
+                  Alert.alert('Belum ada kelurahan', 'Pilih kelurahan terlebih dahulu.');
+                }
+              }}
+              activeOpacity={0.7}
+              disabled={!selectedFilterKelurahanId}
+            >
+              <Text style={[styles.filterValue, !selectedFilterRtId && styles.filterPlaceholder]}>
+                RT: {selectedFilterRtName || 'Semua RT'}
+              </Text>
+              <Text style={styles.editIcon}>Ubah</Text>
+            </TouchableOpacity>
+            {(selectedFilterKelurahanId || selectedFilterRtId) && (
+              <TouchableOpacity
+                style={styles.clearFilterButton}
+                onPress={() => {
+                  setSelectedFilterKelurahanId(null);
+                  setSelectedFilterKelurahanName('');
+                  setSelectedFilterRtId(null);
+                  setSelectedFilterRtName('');
+                  setRtFilterList([]);
+                  // FIX: kirim override eksplisit null/null, jangan andalkan
+                  // state yang baru saja di-set (masih async saat ini).
+                  loadData({ id_kelurahan: null, id_rt: null });
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.clearFilterText}>Hapus Filter</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {/* Ringkasan */}
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
@@ -650,6 +783,116 @@ export default function LaporanScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Modal filter kelurahan */}
+      <Modal
+        visible={showKelurahanFilterModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowKelurahanFilterModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowKelurahanFilterModal(false)}>
+                <Text style={styles.modalCancel}>Batal</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Pilih Kelurahan</Text>
+              <View style={{ width: 44 }} />
+            </View>
+            <View style={styles.modalBody}>
+              {kelurahanFilterLoading ? (
+                <ActivityIndicator size="small" color={COLORS.accent} />
+              ) : kelurahanFilterList.length === 0 ? (
+                <Text style={styles.emptyModalText}>Tidak ada kelurahan tersedia.</Text>
+              ) : (
+                <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                  {kelurahanFilterList.map((kl) => (
+                    <TouchableOpacity
+                      key={kl.id}
+                      style={[styles.rtItem, selectedFilterKelurahanId === kl.id && styles.rtItemSelected]}
+                      onPress={() => {
+                        setSelectedFilterKelurahanId(kl.id);
+                        setSelectedFilterKelurahanName(kl.name);
+                        // FIX: RT yang sebelumnya dipilih (milik kelurahan
+                        // LAMA) direset di sini. Sebelumnya nilai ini
+                        // dibiarkan menempel, jadi kalau user ganti
+                        // kelurahan tanpa memilih RT baru, filter id_rt
+                        // yang salah (dari kelurahan lain) tetap terkirim.
+                        setSelectedFilterRtId(null);
+                        setSelectedFilterRtName('');
+                        setRtFilterList([]);
+                        setShowKelurahanFilterModal(false);
+                        setShowRtFilterModal(true);
+                        fetchRtFilter(kl.id);
+                        // FIX: langsung terapkan filter kelurahan (dengan
+                        // id_rt di-null-kan) tanpa menunggu RT dipilih,
+                        // dan tanpa bergantung pada state yang belum
+                        // ter-update.
+                        loadData({ id_kelurahan: kl.id, id_rt: null });
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.rtItemText}>{kl.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal filter RT */}
+      <Modal
+        visible={showRtFilterModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowRtFilterModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowRtFilterModal(false)}>
+                <Text style={styles.modalCancel}>Batal</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Pilih RT</Text>
+              <View style={{ width: 44 }} />
+            </View>
+            <View style={styles.modalBody}>
+              {rtFilterLoading ? (
+                <ActivityIndicator size="small" color={COLORS.accent} />
+              ) : rtFilterList.length === 0 ? (
+                <Text style={styles.emptyModalText}>Tidak ada RT tersedia.</Text>
+              ) : (
+                <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                  {rtFilterList.map((rt) => (
+                    <TouchableOpacity
+                      key={rt.id}
+                      style={[styles.rtItem, selectedFilterRtId === rt.id && styles.rtItemSelected]}
+                      onPress={() => {
+                        setSelectedFilterRtId(rt.id);
+                        setSelectedFilterRtName(rt.name);
+                        setShowRtFilterModal(false);
+                        // FIX: sebelumnya loadData() dipanggil di sini
+                        // tanpa override, jadi masih pakai
+                        // selectedFilterRtId versi lama (sebelum
+                        // setSelectedFilterRtId di atas benar-benar
+                        // diterapkan React) — filter RT nggak pernah
+                        // beneran nyampe ke request.
+                        loadData({ id_kelurahan: selectedFilterKelurahanId, id_rt: rt.id });
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.rtItemText}>{rt.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -765,6 +1008,68 @@ const styles = StyleSheet.create({
   summaryLabel: { fontSize: 11.5, color: COLORS.textSecondary, marginTop: 2 },
 
   sectionLabel: { fontSize: 14, fontWeight: '700', color: COLORS.textDark, marginBottom: 10 },
+
+  // Filter
+  filterBox: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 22,
+    borderWidth: 1.5,
+    borderColor: COLORS.accentSoft,
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  filterRowDisabled: { opacity: 0.5 },
+  filterDivider: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginVertical: 4,
+  },
+  filterValue: { fontSize: 14, fontWeight: '600', color: COLORS.textDark, flex: 1 },
+  filterPlaceholder: { color: '#9aa0a6', fontWeight: '400' },
+  editIcon: { fontSize: 12, color: COLORS.accent, fontWeight: '600', paddingLeft: 8 },
+  clearFilterButton: {
+    marginTop: 8,
+    backgroundColor: COLORS.dangerSoft,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  clearFilterText: { fontSize: 12, color: COLORS.danger, fontWeight: '600' },
+
+  // Modal filter
+  modalBody: { paddingHorizontal: 20, paddingTop: 16 },
+  emptyModalText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+  rtItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: COLORS.bg,
+    marginBottom: 8,
+  },
+  rtItemSelected: {
+    backgroundColor: COLORS.accentSoft,
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+  },
+  rtItemText: { fontSize: 14, color: COLORS.textDark, fontWeight: '600' },
 
   emptyBox: {
     backgroundColor: COLORS.cardBg,
@@ -914,6 +1219,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 4,
   },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalCancel: { fontSize: 14, color: COLORS.textSecondary },
   modalOption: {
     flexDirection: 'row',
     alignItems: 'center',
