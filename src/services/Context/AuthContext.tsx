@@ -11,6 +11,7 @@ interface AuthContextData {
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
+  updateUser: (updates: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -80,6 +81,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  function updateUser(updates: Partial<User>) {
+    setUser((prev) => (prev ? { ...prev, ...updates } : prev));
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -89,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!token,
         login,
         logout,
+        updateUser,
       }}
     >
       {children}

@@ -23,8 +23,25 @@ export const authService = {
   logout: () => apiClient.get('/logout'),
 };
 
+export interface KelurahanItem {
+  id: number;
+  name: string;
+}
+
+export interface RtItem {
+  id: number;
+  name: string;
+}
+
+export interface ApiDataResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
 export const abjService = {
-  getAll: (params?: { bulan?: number; tahun?: number }) => apiClient.get('/abj', { params }),
+  getAll: (params?: { bulan?: number; tahun?: number; id_kelurahan?: number; id_rt?: number }) =>
+    apiClient.get('/abj', { params }),
   create: (payload: FormAbjPayload) => apiClient.post('/abj', payload),
   getById: (id: number | string) => apiClient.get(`/abj/${id}`),
   update: (id: number | string, payload: FormAbjPayload) => apiClient.put(`/abj/${id}`, payload),
@@ -32,6 +49,11 @@ export const abjService = {
   export: () => apiClient.get('/abj/export', { responseType: 'arraybuffer' }),
   submitSingle: (id: number | string) => apiClient.post(`/abj/${id}/submit-report`),
   submitReport: (payload: { form_abj_ids: number[] }) => apiClient.post('/abj/submit-report', payload),
+  getKelurahan: () => apiClient.get<ApiDataResponse<KelurahanItem[]>>('/abj/kelurahan'),
+  getRtByKelurahan: (id_kelurahan: number) =>
+    apiClient.get<ApiDataResponse<RtItem[]>>('/abj/rt-by-kelurahan', {
+      params: { id_kelurahan },
+    }),
 };
 
 export interface LaporanBulananStatus {

@@ -61,6 +61,7 @@ export default function LaporanDetailScreen() {
     try {
       const response = await abjService.getById(id);
       setData(response?.data?.data ?? null);
+      // console.log('Loaded data:', response?.data?.data);
     } catch (error: any) {
       Alert.alert('Gagal memuat data', error?.response?.data?.message ?? 'Terjadi kesalahan');
     } finally {
@@ -143,13 +144,13 @@ export default function LaporanDetailScreen() {
       >
         {/* Header */}
         <View style={styles.headerRow}>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.iconButton}
             onPress={() => router.back()}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Ionicons name="arrow-back" size={22} color={COLORS.textDark} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <View style={{ flex: 1, marginLeft: 8 }}>
             <Text style={styles.title}>Detail Pemeriksaan</Text>
             <Text style={styles.subtitle}>{formatTanggal(data.tanggal_pemeriksaan)}</Text>
@@ -212,7 +213,7 @@ export default function LaporanDetailScreen() {
             </View>
             <View>
               <Text style={styles.infoLabel}>RT</Text>
-              <Text style={styles.infoValue}>{data.rt?.name ?? '-'}</Text>
+              <Text style={styles.infoValue}>{data.r_t?.name}</Text>
             </View>
           </View>
         </View>

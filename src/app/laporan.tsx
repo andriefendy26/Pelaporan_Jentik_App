@@ -21,7 +21,7 @@ import BottomNav from '../components/BottomNav';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { abjService, laporanBulananService } from '../services/Jentikservice';
 import { downloadAndShareExcel } from '../services/downloadExcel';
-import { FormAbj } from '../types/abj';
+import { FormAbjList } from '../types/abj';
 
 const COLORS = {
   bg: '#EEEEEE',
@@ -79,7 +79,7 @@ export default function LaporanScreen() {
   const [bulan, setBulan] = useState(now.getMonth() + 1);
   const [tahun, setTahun] = useState(now.getFullYear());
 
-  const [items, setItems] = useState<FormAbj[]>([]);
+  const [items, setItems] = useState<FormAbjList[]>([]);
   const [status, setStatus] = useState<string>('belum_ada_data');
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
 
@@ -115,6 +115,7 @@ export default function LaporanScreen() {
         laporanBulananService.getStatus({ bulan, tahun }),
       ]);
       setItems(formRes?.data?.data ?? []);
+      // console.log('Loaded items:', formRes?.data?.data);
       setStatus(statusRes?.data?.status ?? 'belum_ada_data');
       setSubmittedAt(statusRes?.data?.submitted_at ?? null);
     } catch (error: any) {
@@ -173,7 +174,7 @@ export default function LaporanScreen() {
     setTahunModalVisible(false);
   };
 
-  const handleDelete = (item: FormAbj) => {
+  const handleDelete = (item: FormAbjList) => {
     Alert.alert('Hapus Laporan', 'Yakin ingin menghapus laporan ini?', [
       { text: 'Batal', style: 'cancel' },
       {
@@ -472,6 +473,9 @@ export default function LaporanScreen() {
                     <Text style={styles.itemSubtitle}>
                       {item.items_abj?.length ?? 0} rumah diperiksa
                       {jumlahBerjentik > 0 ? ` · ${jumlahBerjentik} berjentik` : ''}
+                    </Text>
+                    <Text style={styles.itemWilayah}>
+                      {item.kelurahan?.name ?? '-'} · RT {item.rt?.name ?? '-'}
                     </Text>
                   </View>
                 </View>
@@ -806,6 +810,7 @@ const styles = StyleSheet.create({
   },
   itemDate: { fontSize: 14, fontWeight: '700', color: COLORS.textDark },
   itemSubtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  itemWilayah: { fontSize: 11, color: COLORS.accent, fontWeight: '600', marginTop: 2 },
 
   itemDetailWrapper: {
     borderTopWidth: 1,
