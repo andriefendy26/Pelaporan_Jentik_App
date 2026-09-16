@@ -66,6 +66,8 @@ export default function ItemsAbjTable({ items, onChange }: Props) {
   const [tidakBerjentik, setTidakBerjentik] = useState('0');
   const [keterangan, setKeterangan] = useState('');
   const [nameError, setNameError] = useState(false);
+  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [editKeterangan, setEditKeterangan] = useState('');
 
   const totalBerjentik = items.reduce(
     (sum, i) => sum + (Number(i.penampungan_berjentik) || 0),
@@ -112,6 +114,28 @@ export default function ItemsAbjTable({ items, onChange }: Props) {
 
   const removeItem = (index: number) => {
     onChange(items.filter((_, i) => i !== index));
+  };
+
+  const openEditKeterangan = (index: number) => {
+    setEditKeterangan(items[index]?.keterangan ?? '');
+    setEditIndex(index);
+  };
+
+  const saveKeterangan = () => {
+    if (editIndex === null) return;
+    const next = [...items];
+    next[editIndex] = {
+      ...next[editIndex],
+      keterangan: editKeterangan.trim() || undefined,
+    };
+    onChange(next);
+    setEditIndex(null);
+    setEditKeterangan('');
+  };
+
+  const cancelEditKeterangan = () => {
+    setEditIndex(null);
+    setEditKeterangan('');
   };
 
   return (
@@ -194,14 +218,44 @@ export default function ItemsAbjTable({ items, onChange }: Props) {
                       </TouchableOpacity>
                     </View>
                     <View style={styles.noteRow}>
-                      <View style={styles.noteSpacer} />
-                      {item.keterangan && item.keterangan.trim() ? (
-                        <Text style={styles.noteText} numberOfLines={3}>
-                          {item.keterangan.trim()}
-                        </Text>
-                      ) : (
-                        <Text style={styles.notePlaceholder}>Tidak ada keterangan</Text>
-                      )}
+                      <View style={styles.noteSpacer}>
+                        {editIndex === index ? (
+                          <View>
+                            <View style={styles.noteActions}>
+                              <TouchableOpacity onPress={saveKeterangan} activeOpacity={0.7}>
+                                <Ionicons name="checkmark-circle-outline" size={16} color={COLORS.accent} />
+                              </TouchableOpacity>
+                              <TouchableOpacity onPress={cancelEditKeterangan} activeOpacity={0.7}>
+                                <Ionicons name="close-circle-outline" size={16} color={COLORS.textSecondary} />
+                              </TouchableOpacity>
+                            </View>
+                            <TextInput
+                              style={styles.noteInput}
+                              placeholder="Masukkan keterangan"
+                              placeholderTextColor="#9aa0a6"
+                              value={editKeterangan}
+                              onChangeText={setEditKeterangan}
+                              multiline
+                              textAlignVertical="top"
+                            />
+                          </View>
+                        ) : (
+                          <TouchableOpacity
+                            onPress={() => openEditKeterangan(index)}
+                            activeOpacity={0.5}
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                          >
+                            {item.keterangan && item.keterangan.trim() ? (
+                              <Text style={styles.noteText} numberOfLines={3}>
+                                {item.keterangan.trim()}
+                              </Text>
+                            ) : (
+                              <Text style={styles.notePlaceholder}>Tidak ada keterangan</Text>
+                            )}
+                            <Ionicons name="create-outline" size={13} color={COLORS.textSecondary} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     </View>
                   </View>
                 ))}
@@ -415,6 +469,23 @@ const styles = StyleSheet.create({
   },
   noteSpacer: {
     marginLeft: COL.no + 4,
+  },
+  noteInput: {
+    backgroundColor: COLORS.bg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    fontSize: 12,
+    color: COLORS.textDark,
+    minHeight: 40,
+    marginTop: 2,
+  },
+  noteActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 6,
   },
   noteText: {
     fontSize: 12,
