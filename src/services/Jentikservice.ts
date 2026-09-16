@@ -46,7 +46,10 @@ export const abjService = {
   getById: (id: number | string) => apiClient.get(`/abj/${id}`),
   update: (id: number | string, payload: FormAbjPayload) => apiClient.put(`/abj/${id}`, payload),
   delete: (id: number | string) => apiClient.delete(`/abj/${id}`),
-  export: () => apiClient.get('/abj/export', { responseType: 'arraybuffer' }),
+  // export: () => apiClient.get('/abj/export', { responseType: 'arraybuffer' }),
+  export: (params?: { bulan?: number; tahun?: number; id_kelurahan?: number; id_rt?: number }) =>
+    apiClient.get('/abj/export', { params, responseType: 'arraybuffer' }),
+
   submitSingle: (id: number | string) => apiClient.post(`/abj/${id}/submit-report`),
   submitReport: (payload: { form_abj_ids: number[] }) => apiClient.post('/abj/submit-report', payload),
   getKelurahan: () => apiClient.get<ApiDataResponse<KelurahanItem[]>>('/abj/kelurahan'),

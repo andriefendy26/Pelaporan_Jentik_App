@@ -344,6 +344,42 @@ export default function LaporanScreen() {
     );
   };
 
+  // const handleExport = async () => {
+  //   if (exporting) return;
+  //   if (!isOnline) {
+  //     Alert.alert('Tidak ada koneksi', 'Export Excel membutuhkan koneksi internet.');
+  //     return;
+  //   }
+
+  //   Alert.alert(
+  //     'Export Excel',
+  //     'Unduh seluruh data ABJ untuk wilayah kamu?',
+  //     [
+  //       { text: 'Batal', style: 'cancel' },
+  //       {
+  //         text: 'Ya, Export',
+  //         onPress: async () => {
+  //           setExporting(true);
+  //           try {
+  //             const res = await abjService.export();
+  //             const contentDisposition = res.headers['content-disposition'];
+  //             const filenameMatch = contentDisposition?.match(/filename="?([^"]+)"?/);
+  //             const filename = filenameMatch?.[1] ?? `abj-${bulan}-${tahun}.xlsx`;
+  //             await downloadAndShareExcel(res.data as ArrayBuffer, filename);
+  //           } catch (error: any) {
+  //             Alert.alert(
+  //               'Gagal export',
+  //               error?.response?.data?.message ?? 'Tidak bisa mengunduh file Excel.'
+  //             );
+  //           } finally {
+  //             setExporting(false);
+  //           }
+  //         },
+  //       },
+  //     ]
+  //   );
+  // };
+
   const handleExport = async () => {
     if (exporting) return;
     if (!isOnline) {
@@ -351,30 +387,53 @@ export default function LaporanScreen() {
       return;
     }
 
+    const doExport = async (withPeriode: boolean) => {
+      setExporting(true);
+      try {
+        const params: { bulan?: number; tahun?: number; id_kelurahan?: number; id_rt?: number } = {};
+
+        if (withPeriode) {
+          params.bulan = bulan;
+          params.tahun = tahun;
+        }
+        // Filter wilayah (super admin) tetap ikut diterapkan di kedua mode.
+        if (isSuperAdmin && selectedFilterKelurahanId) {
+          params.id_kelurahan = selectedFilterKelurahanId;
+        }
+        if (isSuperAdmin && selectedFilterRtId) {
+          params.id_rt = selectedFilterRtId;
+        }
+
+        const res = await abjService.export(params);
+        const contentDisposition = res.headers['content-disposition'];
+        const filenameMatch = contentDisposition?.match(/filename="?([^"]+)"?/);
+        const defaultFilename = withPeriode
+          ? `abj-${bulan}-${tahun}.xlsx`
+          : 'abj-semua-data.xlsx';
+        const filename = filenameMatch?.[1] ?? defaultFilename;
+        await downloadAndShareExcel(res.data as ArrayBuffer, filename);
+      } catch (error: any) {
+        Alert.alert(
+          'Gagal export',
+          error?.response?.data?.message ?? 'Tidak bisa mengunduh file Excel.'
+        );
+      } finally {
+        setExporting(false);
+      }
+    };
+
     Alert.alert(
       'Export Excel',
-      'Unduh seluruh data ABJ untuk wilayah kamu?',
+      'Pilih data yang ingin diunduh',
       [
         { text: 'Batal', style: 'cancel' },
         {
-          text: 'Ya, Export',
-          onPress: async () => {
-            setExporting(true);
-            try {
-              const res = await abjService.export();
-              const contentDisposition = res.headers['content-disposition'];
-              const filenameMatch = contentDisposition?.match(/filename="?([^"]+)"?/);
-              const filename = filenameMatch?.[1] ?? `abj-${bulan}-${tahun}.xlsx`;
-              await downloadAndShareExcel(res.data as ArrayBuffer, filename);
-            } catch (error: any) {
-              Alert.alert(
-                'Gagal export',
-                error?.response?.data?.message ?? 'Tidak bisa mengunduh file Excel.'
-              );
-            } finally {
-              setExporting(false);
-            }
-          },
+          text: `${BULAN_NAMA[bulan - 1]} ${tahun}`,
+          onPress: () => doExport(true),
+        },
+        {
+          text: 'Semua Bulan & Tahun',
+          onPress: () => doExport(false),
         },
       ]
     );
