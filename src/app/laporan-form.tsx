@@ -3,7 +3,7 @@ import { enqueueLaporan } from '../services/offlineQueue';
 import { syncPendingLaporan } from '../services/syncService';
 
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -15,7 +15,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -25,16 +24,27 @@ import { useAuth } from '../services/Context/AuthContext';
 import { FormAbj, ItemAbj } from '../types/abj';
 import type { KelurahanItem, RtItem } from '../services/Jentikservice';
 
+/** Token visual disamakan dengan HomeScreen. */
 const COLORS = {
-  bg: '#EEEEEE',
+  bg: '#F4F6F8',
   cardBg: '#FFFFFF',
   textDark: '#222831',
   textSecondary: '#393E46',
+  textMuted: '#7A828C',
   accent: '#00ADB5',
-  accentSoft: 'rgba(0, 173, 181, 0.1)',
+  accentDark: '#008B92',
+  accentSoft: 'rgba(0, 173, 181, 0.10)',
+  violet: '#7C5CFC',
+  violetSoft: 'rgba(124, 92, 252, 0.10)',
+  amber: '#F59E0B',
+  amberSoft: 'rgba(245, 158, 11, 0.12)',
+  emerald: '#10B981',
+  emeraldSoft: 'rgba(16, 185, 129, 0.12)',
+  rose: '#F43F5E',
+  roseSoft: 'rgba(244, 63, 94, 0.10)',
   danger: '#dc2626',
   dangerSoft: 'rgba(220, 38, 38, 0.08)',
-  border: '#e0e0e0',
+  border: '#E6E9ED',
 };
 
 const BULAN_NAMA = [
@@ -158,18 +168,24 @@ export default function LaporanFormScreen() {
     setShowDatePicker(false);
   };
 
+  const fetchKelurahanList = () => {
+    setKelurahanError(null);
+    setKelurahanLoading(true);
+    abjService.getKelurahan().then((res) => {
+      setKelurahanList(res?.data?.data ?? []);
+    }).catch(() => {
+      setKelurahanError('Gagal memuat daftar kelurahan');
+    }).finally(() => {
+      setKelurahanLoading(false);
+    });
+  };
+
   useEffect(() => {
     if (isSuperAdmin) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setKelurahanLoading(true);
-      abjService.getKelurahan().then((res) => {
-        setKelurahanList(res?.data?.data ?? []);
-      }).catch(() => {
-        setKelurahanError('Gagal memuat daftar kelurahan');
-      }).finally(() => {
-        setKelurahanLoading(false);
-      });
+      fetchKelurahanList();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuperAdmin]);
 
   const fetchRtList = async (id_kelurahan: number) => {
@@ -327,145 +343,173 @@ export default function LaporanFormScreen() {
       // tidak melakukan apa-apa di Android, jadi form tidak pernah naik
       // saat keyboard muncul (termasuk saat mengisi input di dalam
       // ItemsAbjTable). "height" membuat area ScrollView otomatis
-      // menyusut ketika keyboard tampil, sehingga input yang sedang
-      // difokus (termasuk yang nested di ItemsAbjTable) ikut terangkat
-      // dan ScrollView bisa auto-scroll ke posisinya.
+      // menyusut ketika keyboard tampil.
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
     >
-      <View style={styles.header}>
-        {/* <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="arrow-back" size={22} color={COLORS.textDark} />
-        </TouchableOpacity> */}
-        <Text style={styles.headerTitle}>
-          {isEdit ? 'Edit Laporan ABJ' : 'Tambah Laporan ABJ'}
-        </Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      {!isOnline && (
-        <View style={styles.offlineBadge}>
-          <Ionicons name="cloud-offline-outline" size={12} color={COLORS.danger} />
-          <Text style={styles.offlineBadgeText}>Mode offline</Text>
-        </View>
-      )}
-
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
-        // Bantu iOS 13+ menghitung inset keyboard secara otomatis, jadi
-        // input yang difokus di dalam ItemsAbjTable ikut ter-scroll ke
-        // atas keyboard tanpa perlu offset manual tambahan.
         automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
       >
-        {/* Info akun */}
-        {/* <View style={styles.infoBox}>
-          <View style={styles.infoRow}>
-            <View style={styles.infoIconWrapper}>
-              <Ionicons name="location-outline" size={16} color={COLORS.accent} />
-            </View>
+        {/* Hero card mengikuti pola HomeScreen */}
+        <View style={styles.heroCard}>
+          <View style={styles.heroBlobLarge} />
+          <View style={styles.heroBlobSmall} />
+
+          <View style={styles.heroTopRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.infoLabel}>Kelurahan</Text>
-              <Text style={styles.infoValue}>
-                {user?.kelurahan?.name ?? '-'}
+              <Text style={styles.heroTitle}>
+                {isEdit ? 'Edit Laporan ABJ' : 'Tambah Laporan ABJ'}
+              </Text>
+              <Text style={styles.heroSubtitle}>
+                {isEdit ? 'Perbarui data pemeriksaan jentik' : 'Catat hasil pemeriksaan jentik'}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.heroIconButton}
+              onPress={() => router.back()}
+              hitSlop={8}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="close" size={20} color={COLORS.cardBg} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.heroChipRow}>
+            <View style={styles.heroChip}>
+              <Ionicons name="location-outline" size={13} color={COLORS.cardBg} />
+              <Text style={styles.heroChipText} numberOfLines={1}>
+                {selectedKelurahanName || 'Kelurahan belum dipilih'}
+              </Text>
+            </View>
+            <View style={styles.heroChip}>
+              <Ionicons name="home-outline" size={13} color={COLORS.cardBg} />
+              <Text style={styles.heroChipText} numberOfLines={1}>
+                {selectedRtName || 'RT belum dipilih'}
               </Text>
             </View>
           </View>
-          <View style={styles.infoDivider} />
-          <View style={styles.infoRow}>
-            <View style={styles.infoIconWrapper}>
-              <Ionicons name="home-outline" size={16} color={COLORS.accent} />
+
+          {!isOnline && (
+            <View style={styles.offlineBadge}>
+              <Ionicons name="cloud-offline-outline" size={12} color={COLORS.cardBg} />
+              <Text style={styles.offlineBadgeText}>Mode offline — tersimpan di perangkat</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.infoLabel}>RT</Text>
-              <Text style={styles.infoValue}>
-                {user?.r_t?.name ?? '-'}
-              </Text>
-            </View>
-          </View>
-        </View> */}
+          )}
+        </View>
 
         {isSuperAdmin && (
-          <View style={styles.wilayahBox}>
-            <View style={styles.wilayahHeader}>
-              <Ionicons name="map-outline" size={15} color={COLORS.accent} />
-              <Text style={styles.sectionLabel}>Pilih Wilayah</Text>
+          <>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.sectionTitleRow}>
+                <View style={styles.sectionBar} />
+                <Text style={styles.sectionTitle}>Wilayah</Text>
+              </View>
             </View>
-            <TouchableOpacity
-              style={styles.wilayahRow}
-              onPress={() => setShowKelurahanModal(true)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.wilayahValue, !selectedKelurahanId && styles.wilayahPlaceholder]}>
-                {selectedKelurahanName || 'Pilih kelurahan...'}
-              </Text>
-              <Text style={styles.editIcon}>Ubah</Text>
-            </TouchableOpacity>
-            <View style={styles.wilayahDivider} />
-            <TouchableOpacity
-              style={[styles.wilayahRow, !selectedKelurahanId && styles.wilayahRowDisabled]}
-              onPress={() => {
-                if (selectedKelurahanId) {
-                  openRtModal(selectedKelurahanId);
-                } else {
-                  Alert.alert('Belum ada kelurahan', 'Pilih kelurahan terlebih dahulu.');
-                }
-              }}
-              activeOpacity={0.7}
-              disabled={!selectedKelurahanId}
-            >
-              <Text style={[styles.wilayahValue, !selectedRtId && styles.wilayahPlaceholder]}>
-                {selectedRtName || 'Pilih RT...'}
-              </Text>
-              <Text style={styles.editIcon}>Ubah</Text>
-            </TouchableOpacity>
-          </View>
+
+            <View style={styles.card}>
+              <TouchableOpacity
+                style={styles.pickerRow}
+                onPress={() => setShowKelurahanModal(true)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.pickerIconWrapper, { backgroundColor: COLORS.violetSoft }]}>
+                  <Ionicons name="map-outline" size={16} color={COLORS.violet} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.pickerLabel}>Kelurahan</Text>
+                  <Text style={[styles.pickerValue, !selectedKelurahanId && styles.pickerPlaceholder]} numberOfLines={1}>
+                    {selectedKelurahanName || 'Pilih kelurahan'}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#b0b4ba" />
+              </TouchableOpacity>
+
+              <View style={styles.cardDivider} />
+
+              <TouchableOpacity
+                style={[styles.pickerRow, !selectedKelurahanId && styles.pickerRowDisabled]}
+                onPress={() => {
+                  if (selectedKelurahanId) {
+                    openRtModal(selectedKelurahanId);
+                  } else {
+                    Alert.alert('Belum ada kelurahan', 'Pilih kelurahan terlebih dahulu.');
+                  }
+                }}
+                activeOpacity={0.75}
+                disabled={!selectedKelurahanId}
+              >
+                <View style={[styles.pickerIconWrapper, { backgroundColor: COLORS.amberSoft }]}>
+                  <Ionicons name="home-outline" size={16} color={COLORS.amber} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.pickerLabel}>RT</Text>
+                  <Text style={[styles.pickerValue, !selectedRtId && styles.pickerPlaceholder]} numberOfLines={1}>
+                    {selectedRtName || 'Pilih RT'}
+                  </Text>
+                </View>
+                {rtLoading ? (
+                  <ActivityIndicator size="small" color={COLORS.accent} />
+                ) : (
+                  <Ionicons name="chevron-forward" size={16} color="#b0b4ba" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </>
         )}
 
         {/* Tanggal pemeriksaan */}
         <View style={styles.sectionHeaderRow}>
-          <Ionicons name="calendar-outline" size={15} color={COLORS.accent} />
-          <Text style={styles.sectionLabel}>Tanggal Pemeriksaan</Text>
-        </View>
-
-        <TouchableOpacity style={styles.dateWrapper} onPress={openDatePicker} activeOpacity={0.7}>
-          <View style={styles.dateIconWrapper}>
-            <Ionicons name="calendar" size={18} color={COLORS.accent} />
+          <View style={styles.sectionTitleRow}>
+            <View style={styles.sectionBar} />
+            <Text style={styles.sectionTitle}>Tanggal Pemeriksaan</Text>
           </View>
-          <Text style={[styles.dateText, !tanggalPemeriksaan && styles.datePlaceholder]}>
-            {tanggalPemeriksaan ? toDisplayDateString(tanggalPemeriksaan) : 'Pilih tanggal pemeriksaan'}
-          </Text>
           <TouchableOpacity
             style={styles.todayButton}
             onPress={() => setTanggalPemeriksaan(today)}
             hitSlop={8}
+            activeOpacity={0.8}
           >
             <Text style={styles.todayButtonText}>Hari ini</Text>
           </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.card} onPress={openDatePicker} activeOpacity={0.75}>
+          <View style={styles.pickerRow}>
+            <View style={[styles.pickerIconWrapper, { backgroundColor: COLORS.accentSoft }]}>
+              <Ionicons name="calendar-outline" size={16} color={COLORS.accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.pickerLabel}>Tanggal</Text>
+              <Text style={[styles.pickerValue, !tanggalPemeriksaan && styles.pickerPlaceholder]}>
+                {tanggalPemeriksaan ? toDisplayDateString(tanggalPemeriksaan) : 'Pilih tanggal pemeriksaan'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#b0b4ba" />
+          </View>
         </TouchableOpacity>
         <Text style={styles.helperText}>Tanggal tidak boleh melebihi hari ini.</Text>
 
         {/* Data pemeriksaan */}
         <View style={styles.sectionHeaderRow}>
-          <Ionicons name="people-outline" size={15} color={COLORS.accent} />
-          <Text style={styles.sectionLabel}>Data Kepala Keluarga</Text>
+          <View style={styles.sectionTitleRow}>
+            <View style={styles.sectionBar} />
+            <Text style={styles.sectionTitle}>Data Kepala Keluarga</Text>
+          </View>
           {items.length > 0 ? (
             <View style={styles.countBadge}>
-              <Text style={styles.countBadgeText}>{items.length}</Text>
+              <Text style={styles.countBadgeText}>{items.length} baris</Text>
             </View>
           ) : null}
         </View>
+
         <ItemsAbjTable items={items} onChange={setItems} />
 
-        {/* Ruang ekstra di bawah tabel supaya baris/input terakhir tidak
-            ketutupan footer tombol submit saat keyboard aktif. */}
+        {/* Ruang ekstra supaya baris terakhir tidak ketutupan footer. */}
         <View style={{ height: 24 }} />
       </ScrollView>
 
@@ -505,55 +549,50 @@ export default function LaporanFormScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setShowKelurahanModal(false)}>
-                <Text style={styles.modalCancel}>Batal</Text>
-              </TouchableOpacity>
               <Text style={styles.modalTitle}>Pilih Kelurahan</Text>
-              <View style={{ width: 44 }} />
+              <TouchableOpacity onPress={() => setShowKelurahanModal(false)} hitSlop={8}>
+                <Ionicons name="close" size={20} color={COLORS.textMuted} />
+              </TouchableOpacity>
             </View>
+
             <View style={styles.modalBody}>
               {kelurahanLoading ? (
-                <ActivityIndicator size="small" color={COLORS.accent} />
+                <ActivityIndicator size="small" color={COLORS.accent} style={{ paddingVertical: 24 }} />
               ) : kelurahanError ? (
-                <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                <View style={styles.modalErrorBox}>
                   <Text style={styles.emptyModalText}>{kelurahanError}</Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setKelurahanError(null);
-                      setKelurahanLoading(true);
-                      abjService.getKelurahan().then((res) => {
-                        setKelurahanList(res?.data?.data ?? []);
-                      }).catch(() => {
-                        setKelurahanError('Gagal memuat daftar kelurahan');
-                      }).finally(() => {
-                        setKelurahanLoading(false);
-                      });
-                    }}
-                    style={{ marginTop: 8, backgroundColor: COLORS.accentSoft, paddingHorizontal: 16, paddingVertical: 6, borderRadius: 8 }}
-                  >
-                    <Text style={{ color: COLORS.accent, fontWeight: '600', fontSize: 13 }}>Coba lagi</Text>
+                  <TouchableOpacity onPress={fetchKelurahanList} style={styles.retryButton} activeOpacity={0.8}>
+                    <Ionicons name="refresh" size={14} color={COLORS.accent} />
+                    <Text style={styles.retryButtonText}>Coba lagi</Text>
                   </TouchableOpacity>
                 </View>
               ) : kelurahanList.length === 0 ? (
                 <Text style={styles.emptyModalText}>Tidak ada kelurahan tersedia.</Text>
               ) : (
-                <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                  {kelurahanList.map((kl) => (
-                    <TouchableOpacity
-                      key={kl.id}
-                      style={[styles.rtItem, selectedKelurahanId === kl.id && styles.rtItemSelected]}
-                      onPress={() => {
-                        setSelectedKelurahanId(kl.id);
-                        setSelectedKelurahanName(kl.name);
-                        setShowKelurahanModal(false);
-                        openRtModal(kl.id);
-                      }}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.rtItemText}>{kl.name}</Text>
-                    </TouchableOpacity>
-                  ))}
+                <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" style={{ maxHeight: 360 }}>
+                  {kelurahanList.map((kl) => {
+                    const aktif = selectedKelurahanId === kl.id;
+                    return (
+                      <TouchableOpacity
+                        key={kl.id}
+                        style={[styles.modalOption, aktif && styles.modalOptionActive]}
+                        onPress={() => {
+                          setSelectedKelurahanId(kl.id);
+                          setSelectedKelurahanName(kl.name);
+                          setShowKelurahanModal(false);
+                          openRtModal(kl.id);
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[styles.modalOptionText, aktif && styles.modalOptionTextActive]}>
+                          {kl.name}
+                        </Text>
+                        {aktif && <Ionicons name="checkmark-circle" size={20} color={COLORS.accent} />}
+                      </TouchableOpacity>
+                    );
+                  })}
                 </ScrollView>
               )}
             </View>
@@ -570,47 +609,56 @@ export default function LaporanFormScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setShowRtModal(false)}>
-                <Text style={styles.modalCancel}>Batal</Text>
-              </TouchableOpacity>
               <Text style={styles.modalTitle}>Pilih RT</Text>
-              <View style={{ width: 44 }} />
+              <TouchableOpacity onPress={() => setShowRtModal(false)} hitSlop={8}>
+                <Ionicons name="close" size={20} color={COLORS.textMuted} />
+              </TouchableOpacity>
             </View>
+
             <View style={styles.modalBody}>
               {rtLoading ? (
-                <ActivityIndicator size="small" color={COLORS.accent} />
+                <ActivityIndicator size="small" color={COLORS.accent} style={{ paddingVertical: 24 }} />
               ) : rtError ? (
-                <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                <View style={styles.modalErrorBox}>
                   <Text style={styles.emptyModalText}>{rtError}</Text>
                   <TouchableOpacity
                     onPress={() => {
                       setRtError(null);
                       openRtModal(fetchRtId ?? selectedKelurahanId ?? 0);
                     }}
-                    style={{ marginTop: 8, backgroundColor: COLORS.accentSoft, paddingHorizontal: 16, paddingVertical: 6, borderRadius: 8 }}
+                    style={styles.retryButton}
+                    activeOpacity={0.8}
                   >
-                    <Text style={{ color: COLORS.accent, fontWeight: '600', fontSize: 13 }}>Coba lagi</Text>
+                    <Ionicons name="refresh" size={14} color={COLORS.accent} />
+                    <Text style={styles.retryButtonText}>Coba lagi</Text>
                   </TouchableOpacity>
                 </View>
               ) : rtList.length === 0 ? (
                 <Text style={styles.emptyModalText}>Tidak ada RT tersedia.</Text>
               ) : (
-                <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                  {rtList.map((rt) => (
-                    <TouchableOpacity
-                      key={rt.id}
-                      style={[styles.rtItem, selectedRtId === rt.id && styles.rtItemSelected]}
-                      onPress={() => {
-                        setSelectedRtId(rt.id);
-                        setSelectedRtName(rt.name);
-                        setShowRtModal(false);
-                      }}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.rtItemText}>{rt.name}</Text>
-                    </TouchableOpacity>
-                  ))}
+                <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" style={{ maxHeight: 360 }}>
+                  {rtList.map((rt) => {
+                    const aktif = selectedRtId === rt.id;
+                    return (
+                      <TouchableOpacity
+                        key={rt.id}
+                        style={[styles.modalOption, aktif && styles.modalOptionActive]}
+                        onPress={() => {
+                          setSelectedRtId(rt.id);
+                          setSelectedRtName(rt.name);
+                          setShowRtModal(false);
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[styles.modalOptionText, aktif && styles.modalOptionTextActive]}>
+                          {rt.name}
+                        </Text>
+                        {aktif && <Ionicons name="checkmark-circle" size={20} color={COLORS.accent} />}
+                      </TouchableOpacity>
+                    );
+                  })}
                 </ScrollView>
               )}
             </View>
@@ -620,21 +668,22 @@ export default function LaporanFormScreen() {
 
       {/* Date picker: Android tampil native dialog langsung */}
       {showDatePicker && Platform.OS === 'android' && (
-      <DateTimePicker
-        value={tempDate}
-        mode="date"
-        display="calendar"
-        maximumDate={today}
-        onValueChange={handleDateChange}
-        onDismiss={handleDatePickerDismiss}
-      />
-    )}
+        <DateTimePicker
+          value={tempDate}
+          mode="date"
+          display="calendar"
+          maximumDate={today}
+          onValueChange={handleDateChange}
+          onDismiss={handleDatePickerDismiss}
+        />
+      )}
 
-      {/* Date picker: iOS pakai modal spinner + tombol konfirmasi */}
+      {/* Date picker: iOS pakai bottom sheet + tombol konfirmasi */}
       {Platform.OS === 'ios' && (
         <Modal visible={showDatePicker} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.modalSheet}>
+              <View style={styles.modalHandle} />
               <View style={styles.modalHeader}>
                 <TouchableOpacity onPress={() => setShowDatePicker(false)}>
                   <Text style={styles.modalCancel}>Batal</Text>
@@ -663,265 +712,242 @@ export default function LaporanFormScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-    backgroundColor: COLORS.bg,
+  content: {
+    padding: 20,
+    paddingBottom: 24,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 720,
+    minWidth: '100%',
   },
-    offlineBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: COLORS.dangerSoft,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    marginTop: 4,
-  },
-  offlineBadgeText: { fontSize: 10.5, color: COLORS.danger, fontWeight: '700' },
-  backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: COLORS.cardBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: COLORS.textDark,
-  },
-  headerSpacer: { width: 38 },
-  content: { padding: 20, paddingTop: 4, paddingBottom: 24, alignSelf: 'center', width: '100%', maxWidth: 720, minWidth: '100%' },
-  infoBox: {
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    padding: 16,
+
+  /* ---------- Hero ---------- */
+  heroCard: {
+    backgroundColor: COLORS.accent,
+    borderRadius: 24,
+    padding: 18,
     marginBottom: 22,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 1,
+    overflow: 'hidden',
+    shadowColor: COLORS.accent,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 5,
   },
-  infoRow: {
+  heroBlobLarge: {
+    position: 'absolute',
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    top: -70,
+    right: -50,
+  },
+  heroBlobSmall: {
+    position: 'absolute',
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    bottom: -50,
+    left: -20,
+  },
+  heroTopRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
-  infoIconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.accentSoft,
+  heroTitle: { fontSize: 20, fontWeight: '700', color: COLORS.cardBg, marginBottom: 2 },
+  heroSubtitle: { fontSize: 12.5, color: 'rgba(255,255,255,0.8)' },
+  heroIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  infoLabel: { fontSize: 11, color: COLORS.textSecondary },
-  infoValue: { fontSize: 14, fontWeight: '700', color: COLORS.textDark, marginTop: 1 },
-  editIcon: { fontSize: 12, color: COLORS.accent, fontWeight: '600', paddingLeft: 8 },
-  wilayahBox: {
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 22,
-    borderWidth: 1.5,
-    borderColor: COLORS.accentSoft,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  wilayahHeader: {
+  heroChipRow: { flexDirection: 'row', gap: 8 },
+  heroChip: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 12,
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.20)',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 12,
   },
-  wilayahRow: {
+  heroChipText: { flex: 1, fontSize: 11.5, fontWeight: '700', color: COLORS.cardBg },
+  offlineBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
+    alignSelf: 'flex-start',
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.20)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 10,
   },
-  wilayahRowDisabled: { opacity: 0.5 },
-  wilayahDivider: {
-    height: 1,
-    backgroundColor: '#eee',
-    marginLeft: 0,
-    marginVertical: 4,
-  },
-  wilayahValue: { fontSize: 14, fontWeight: '600', color: COLORS.textDark, flex: 1 },
-  wilayahPlaceholder: { color: '#9aa0a6', fontWeight: '400' },
-  modalBody: { paddingHorizontal: 20, paddingTop: 16 },
-  emptyModalText: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    paddingVertical: 20,
-  },
-  rtItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: COLORS.bg,
-    marginBottom: 8,
-  },
-  rtItemSelected: {
-    backgroundColor: COLORS.accentSoft,
-    borderWidth: 1,
-    borderColor: COLORS.accent,
-  },
-  rtItemText: { fontSize: 14, color: COLORS.textDark, fontWeight: '600' },
-  infoDivider: {
-    height: 1,
-    backgroundColor: '#eee',
-    marginVertical: 12,
-    marginLeft: 44,
-  },
+  offlineBadgeText: { fontSize: 11, color: COLORS.cardBg, fontWeight: '700' },
+
+  /* ---------- Section ---------- */
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.textDark,
-  },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sectionBar: { width: 4, height: 16, borderRadius: 2, backgroundColor: COLORS.accent },
+  sectionTitle: { fontSize: 15.5, fontWeight: '700', color: COLORS.textDark },
   countBadge: {
     backgroundColor: COLORS.accentSoft,
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
   },
   countBadgeText: { fontSize: 11, fontWeight: '700', color: COLORS.accent },
-  dateWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.cardBg,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 10,
-  },
-  dateIconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dateText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textDark,
-  },
-  datePlaceholder: {
-    color: '#9aa0a6',
-    fontWeight: '400',
-  },
   todayButton: {
     paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     backgroundColor: COLORS.accentSoft,
   },
-  todayButtonText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.accent,
-  },
-  helperText: {
-    fontSize: 11.5,
-    color: COLORS.textSecondary,
-    marginTop: 6,
-    marginBottom: 22,
-    marginLeft: 2,
-  },
-  repeaterCard: {
+  todayButtonText: { fontSize: 12, fontWeight: '700', color: COLORS.accent },
+
+  /* ---------- Kartu form ---------- */
+  card: {
     backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 1,
   },
+  cardDivider: { height: 1, backgroundColor: COLORS.border, marginLeft: 46 },
+  pickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+  },
+  pickerRowDisabled: { opacity: 0.5 },
+  pickerIconWrapper: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickerLabel: { fontSize: 11, color: COLORS.textMuted },
+  pickerValue: { fontSize: 14, fontWeight: '700', color: COLORS.textDark, marginTop: 2 },
+  pickerPlaceholder: { color: '#9aa0a6', fontWeight: '400' },
+  helperText: {
+    fontSize: 11.5,
+    color: COLORS.textMuted,
+    marginTop: -14,
+    marginBottom: 22,
+    marginLeft: 4,
+  },
+
+  /* ---------- Footer ---------- */
   footer: {
     padding: 16,
     paddingBottom: Platform.OS === 'ios' ? 24 : 16,
-    backgroundColor: COLORS.bg,
+    backgroundColor: COLORS.cardBg,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
   submitButton: {
     flexDirection: 'row',
     gap: 10,
-    backgroundColor: COLORS.textDark,
-    borderRadius: 14,
+    backgroundColor: COLORS.accent,
+    borderRadius: 16,
     paddingVertical: 15,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: COLORS.accent,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
     elevation: 4,
   },
   submitIconWrapper: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.20)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  submitButtonDisabled: {
-    opacity: 0.7,
-  },
+  submitButtonDisabled: { opacity: 0.7 },
   submitText: { color: COLORS.cardBg, fontWeight: '700', fontSize: 15 },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'flex-end',
-  },
+
+  /* ---------- Modal ---------- */
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
   modalSheet: {
     backgroundColor: COLORS.cardBg,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 24,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingTop: 10,
+    paddingBottom: 28,
+  },
+  modalHandle: {
+    width: 42,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#DDE1E6',
+    alignSelf: 'center',
+    marginBottom: 12,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingBottom: 12,
   },
   modalTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textDark },
-  modalCancel: { fontSize: 14, color: COLORS.textSecondary },
+  modalCancel: { fontSize: 14, color: COLORS.textMuted },
   modalConfirm: { fontSize: 14, fontWeight: '700', color: COLORS.accent },
+  modalBody: { paddingHorizontal: 16 },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 13,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  modalOptionActive: { backgroundColor: COLORS.accentSoft },
+  modalOptionText: { fontSize: 14.5, color: COLORS.textDark },
+  modalOptionTextActive: { color: COLORS.accent, fontWeight: '700' },
+  modalErrorBox: { paddingVertical: 20, alignItems: 'center' },
+  emptyModalText: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    backgroundColor: COLORS.accentSoft,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  retryButtonText: { color: COLORS.accent, fontWeight: '700', fontSize: 13 },
 });

@@ -16,7 +16,7 @@ export default function StatCard({ label, value, accent, tint, icon }: Props) {
 
   return (
     <View style={styles.card}>
-      <View style={[styles.accentBar, { backgroundColor: accent }]} />
+      {/* <View style={[styles.accentBar, { backgroundColor: accent }]} /> */}
 
       <View style={styles.topRow}>
         {icon ? (

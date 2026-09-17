@@ -2,7 +2,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { getQueue, PendingLaporan } from '../services/offlineQueue';
 import { syncPendingLaporan, getSyncStatus } from '../services/syncService';
 
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -27,24 +27,34 @@ import type { KelurahanItem, RtItem } from '../services/Jentikservice';
 
 /** Palet disamakan dengan dashboard: base #00ADB5 + aksen sekunder. */
 const COLORS = {
-  bg: '#F4F6F8',
+  bg: '#F5F6F7',
   cardBg: '#FFFFFF',
   textDark: '#222831',
-  textSecondary: '#393E46',
-  textMuted: '#7A828C',
-  accent: '#00ADB5',
+  textSecondary: '#4B525A',
+  textMuted: '#8A9099',
+
+  accent: '#00ADB5',                        // satu-satunya warna "cerah"
   accentSoft: 'rgba(0, 173, 181, 0.10)',
-  violet: '#7C5CFC',
-  violetSoft: 'rgba(124, 92, 252, 0.10)',
-  success: '#10B981',
-  successSoft: 'rgba(16, 185, 129, 0.12)',
-  danger: '#F43F5E',
-  dangerSoft: 'rgba(244, 63, 94, 0.10)',
-  dangerBg: '#fdecea',
-  warning: '#F59E0B',
-  warningSoft: 'rgba(245, 158, 11, 0.12)',
+
+  // dulu violet — sekarang netral, supaya kode lain tidak perlu diubah
+  violet: '#5B6472',
+  violetSoft: '#F1F3F5',
+
+  // status: tetap bisa dibedakan, tapi diredam
+  success: '#3F8F72',
+  successSoft: 'rgba(63, 143, 114, 0.10)',
+  danger: '#C4566A',
+  dangerSoft: 'rgba(196, 86, 106, 0.10)',
+  dangerBg: '#FBEEF0',
+  warning: '#B08428',
+  warningSoft: 'rgba(176, 132, 40, 0.10)',
+
   border: '#E6E9ED',
-  muted: '#9aa0a6',
+  muted: '#A0A6AD',
+
+  // warna identik Microsoft Excel
+  excel: '#217346',
+  excelSoft: 'rgba(33, 115, 70, 0.10)',
 };
 
 const BULAN_NAMA = [
@@ -509,9 +519,9 @@ export default function LaporanScreen() {
             activeOpacity={0.85}
           >
             {exporting ? (
-              <ActivityIndicator size={13} color={COLORS.violet} />
+              <ActivityIndicator size={13} color={COLORS.excel} />
             ) : (
-              <Ionicons name="download-outline" size={15} color={COLORS.violet} />
+              <FontAwesome5 name="file-excel" size={14} color={COLORS.excel} />
             )}
             <Text style={styles.exportButtonText}>{exporting ? 'Export...' : 'Export'}</Text>
           </TouchableOpacity>
@@ -615,23 +625,20 @@ export default function LaporanScreen() {
         {/* Ringkasan */}
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
-            <View style={[styles.summaryAccentBar, { backgroundColor: COLORS.accent }]} />
             <View style={[styles.summaryIcon, { backgroundColor: COLORS.accentSoft }]}>
               <Ionicons name="clipboard-outline" size={15} color={COLORS.accent} />
             </View>
-            <Text style={[styles.summaryValue, { color: COLORS.accent }]}>{items.length}</Text>
+            <Text style={[styles.summaryValue, { color: COLORS.textDark }]}>{items.length}</Text>
             <Text style={styles.summaryLabel}>Sesi Pemeriksaan</Text>
           </View>
           <View style={styles.summaryCard}>
-            <View style={[styles.summaryAccentBar, { backgroundColor: COLORS.violet }]} />
             <View style={[styles.summaryIcon, { backgroundColor: COLORS.violetSoft }]}>
               <Ionicons name="home-outline" size={15} color={COLORS.violet} />
             </View>
-            <Text style={[styles.summaryValue, { color: COLORS.violet }]}>{totalRumah}</Text>
+            <Text style={[styles.summaryValue, { color: COLORS.textDark }]}>{totalRumah}</Text>
             <Text style={styles.summaryLabel}>Rumah Diperiksa</Text>
           </View>
           <View style={styles.summaryCard}>
-            <View style={[styles.summaryAccentBar, { backgroundColor: COLORS.danger }]} />
             <View style={[styles.summaryIcon, { backgroundColor: COLORS.dangerSoft }]}>
               <Ionicons name="bug-outline" size={15} color={COLORS.danger} />
             </View>
@@ -1122,14 +1129,16 @@ const styles = StyleSheet.create({
   exportButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.violetSoft,
+    backgroundColor: COLORS.excelSoft,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 14,
     gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(33, 115, 70, 0.25)',
   },
   exportButtonDisabled: { opacity: 0.5 },
-  exportButtonText: { color: COLORS.violet, fontWeight: '700', fontSize: 12.5 },
+  exportButtonText: { color: COLORS.excel, fontWeight: '700', fontSize: 12.5 },
 
   /* ---------- Banner ---------- */
   offlineBadge: {
@@ -1201,7 +1210,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 1,
   },
-  summaryAccentBar: { position: 'absolute', top: 0, left: 0, right: 0, height: 3 },
   summaryIcon: {
     width: 30,
     height: 30,
@@ -1393,7 +1401,7 @@ const styles = StyleSheet.create({
   /* ---------- Footer ---------- */
   footer: {
     padding: 16,
-    paddingBottom: 20,
+    paddingBottom: 120,
     backgroundColor: COLORS.cardBg,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,

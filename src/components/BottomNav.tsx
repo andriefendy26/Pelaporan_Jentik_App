@@ -55,9 +55,15 @@ export default function BottomNav() {
 
 const styles = StyleSheet.create({
   wrapper: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-    backgroundColor: COLORS.bg,
+    // marginHorizontal: 16,
+    // marginBottom: 24,
+    // backgroundColor: COLORS.bg,
+    position: 'absolute',
+    margin: 20,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    // top: 0,
   },
   bottomNav: {
     flexDirection: "row",
